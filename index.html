@@ -821,18 +821,18 @@ async function loadDataFromGoogleSheets() {
         if (Array.isArray(result) && result.length > 0) {
             appData = result;
             // Simpan juga ke localStorage agar data sinkron
-            localStorage.setItem('sipd_data_v17', JSON.stringify(appData));
+            localStorage.setItem('sipd_data_v18', JSON.stringify(appData));
         } else {
             appData = initialSipdData;
         }
     } catch (error) {
         console.warn("Gagal terhubung Cloud, menggunakan cadangan lokal:", error);
-        appData = JSON.parse(localStorage.getItem('sipd_data_v17')) || initialSipdData;
+        appData = JSON.parse(localStorage.getItem('sipd_data_v18')) || initialSipdData;
     }
 }
 
 async function saveLocalStorage() {
-    localStorage.setItem('sipd_data_v17', JSON.stringify(appData));
+    localStorage.setItem('sipd_data_v18', JSON.stringify(appData));
     
     try {
         let response = await fetch(WEB_APP_URL, {
