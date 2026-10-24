@@ -817,25 +817,36 @@ async function loadDataFromGoogleSheets() {
         if (!response.ok) throw new Error("Gagal mengambil data Cloud");
         let result = await response.json();
         
+        // CEK KETAT: Hanya timpa jika data dari Cloud VALID & tidak lebih sedikit dari data lokal yang sudah tersimpan
         if (Array.isArray(result) && result.length > 0) {
-            appData = result;
-            localStorage.setItem('sipd_data_v18', JSON.stringify(appData));
+            let localRaw = localStorage.getItem('sipd_data_v18');
+            let localData = localRaw ? JSON.parse(localRaw) : [];
             
-            // PENTING: Panggil renderData() di sini agar layar HP langsung diperbarui!
-            renderData();
+            // Jika data cloud lebih lengkap atau setara, baru update tampilan
+            if (result.length >= localData.length || localData.length === 0) {
+                appData = result;
+                localStorage.setItem('sipd_data_v18', JSON.stringify(appData));
+            } else {
+                // Jika data cloud mendadak menyusut/kosong, amankan data lokal!
+                appData = localData;
+            }
         } else {
-            appData = initialSipdData;
+            let localRaw = localStorage.getItem('sipd_data_v18');
+            appData = localRaw ? JSON.parse(localRaw) : initialSipdData;
         }
     } catch (error) {
         console.warn("Gagal terhubung Cloud, menggunakan cadangan lokal:", error);
-        appData = JSON.parse(localStorage.getItem('sipd_data_v18')) || initialSipdData;
-        renderData();
+        let localRaw = localStorage.getItem('sipd_data_v18');
+        appData = localRaw ? JSON.parse(localRaw) : initialSipdData;
     }
+    renderData();
 }
 
 async function saveLocalStorage() {
+    // 1. Simpan dulu ke lokal HP/Laptop
     localStorage.setItem('sipd_data_v18', JSON.stringify(appData));
     
+    // 2. Kirim ke Google Apps Script
     try {
         let response = await fetch(WEB_APP_URL, {
             method: "POST",
@@ -845,6 +856,8 @@ async function saveLocalStorage() {
         let resJson = await response.json();
         if (resJson.status === "success") {
             showToast("Tersimpan Permanen di Cloud!");
+        } else {
+            showToast("Gagal simpan Cloud: " + resJson.message);
         }
     } catch (error) {
         console.error("Gagal sync Cloud:", error);
@@ -1392,6 +1405,7 @@ function importJSON(event) {
             let data = JSON.parse(e.target.result);
             if (Array.isArray(data) && confirm("Pulihkan dan simpan permanen data dari file JSON ini ke Cloud Google Sheets?")) {
                 appData = data; 
+                // AWAIT PENTING agar menunggu data selesai terkirim penuh ke Cloud
                 await saveLocalStorage(); 
                 renderData(); 
                 showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
