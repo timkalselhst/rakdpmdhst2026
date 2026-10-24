@@ -673,8 +673,8 @@ function showToast(msg) {
 document.addEventListener("DOMContentLoaded", async () => {
     updateUserInterface();
     initDonutChart();
-    await loadDataFromGoogleSheets();
-    renderData();
+    await loadDataFromGoogleSheets(); // Tunggu data Cloud masuk
+    renderData();                    // Baru gambar ke layar
     initRealAnts();
     initFallingLeavesWithDelay();
     initVisiMisiTicker();
@@ -686,10 +686,10 @@ function initVisiMisiTicker() {
 
     const items = [
         "📌 VISI KABUPATEN HULU SUNGAI TENGAH: Terwujudnya Hulu Sungai Tengah Yang Religius, Sejahtera dan Bermartabat",
-        "🎯 MISI 1: Mewujudkan perubahan sosial masyarakat menuju masyarakat adaptif, berdaya saing dan berkualitas hidup tinggi yang religius berbudaya.",
-        "🎯 MISI 2: Mewujudkan perubahan perekonomian daerah secara merata dengan pengembangan menyeluruh dari hulu dan hilirisasi pertanian serta sektor potensial pendukung dengan prinsip kerakyatan yang memperhatikan kesinambungan pembangunan.",
-        "🎯 MISI 3: Meningkatkan infrastruktur pelayanan publik yang merata dengan prinsip berkelanjutan dalam mendukung pengembangan sektor potensial perekonomian daerah dan pelayanan masyarakat.",
-        "🎯 MISI 4: Mewujudkan Pemerintahan yang tanggap dan santun dengan tata kelola profesional."
+        "🎯 MISI 1: Mewujudkan Perubahan Sosial Masyarakat Menuju Masyarakat Adaptif, Berdaya Saing Dan Berkualitas Hidup Tinggi Yang Religius Berbudaya.",
+        "🎯 MISI 2: Mewujudkan Perubahan Perekonomian Daerah Secara Merata Dengan Pengembangan Menyeluruh Dari Hulu Dan Hilirisasi Pertanian Serta Sektor Potensial Pendukung Dengan Prinsip Kerakyatan Yang Memperhatikan Kesinambungan Pembangunan.",
+        "🎯 MISI 3: Meningkatkan Infrastruktur Pelayanan Publik Yang Merata Dengan Prinsip Berkelanjutan Dalam Mendukung Pengembangan Sektor Potensial Perekonomian Daerah Dan Pelayanan Masyarakat.",
+        "🎯 MISI 4: Mewujudkan Pemerintahan Yang Tanggap Dan Santun Dengan Tata Kelola Profesional."
     ];
 
     let currentIndex = 0;
@@ -813,21 +813,23 @@ function initFallingLeavesWithDelay() {
 
 async function loadDataFromGoogleSheets() {
     try {
-        // Tambahkan ?t=timestamp agar HP/Browser tidak mengambil data dari cache lama
         let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime());
         if (!response.ok) throw new Error("Gagal mengambil data Cloud");
         let result = await response.json();
         
         if (Array.isArray(result) && result.length > 0) {
             appData = result;
-            // Simpan juga ke localStorage agar data sinkron
             localStorage.setItem('sipd_data_v18', JSON.stringify(appData));
+            
+            // PENTING: Panggil renderData() di sini agar layar HP langsung diperbarui!
+            renderData();
         } else {
             appData = initialSipdData;
         }
     } catch (error) {
         console.warn("Gagal terhubung Cloud, menggunakan cadangan lokal:", error);
         appData = JSON.parse(localStorage.getItem('sipd_data_v18')) || initialSipdData;
+        renderData();
     }
 }
 
