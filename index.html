@@ -813,12 +813,15 @@ function initFallingLeavesWithDelay() {
 
 async function loadDataFromGoogleSheets() {
     try {
-        let response = await fetch(WEB_APP_URL);
+        // Tambahkan ?t=timestamp agar HP/Browser tidak mengambil data dari cache lama
+        let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime());
         if (!response.ok) throw new Error("Gagal mengambil data Cloud");
         let result = await response.json();
         
         if (Array.isArray(result) && result.length > 0) {
             appData = result;
+            // Simpan juga ke localStorage agar data sinkron
+            localStorage.setItem('sipd_data_v17', JSON.stringify(appData));
         } else {
             appData = initialSipdData;
         }
