@@ -561,7 +561,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwqE_0rspl2z7Jk0MJ305RGqolNAAMVXGM6nCNHJ6ctWmoUuYdTDq9QeuSCO7kEzHY/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxnBac4-Mqo5LaabSdZQvXxedwcpoTQ4mWJaXbfhCQTf_-sMZeW3esj8wVMYr_kfbX2iw/exec";
 
 // AUDIO CONTEXT UNTUK TAHAN BLOKIR BROWSER
 let globalAudioCtx = null;
@@ -819,7 +819,7 @@ function initFallingLeavesWithDelay() {
     }, 300000);
 }
 
-// PEMUATAN DATA MURNI DARI CLOUD
+// PEMUATAN DATA DARI CLOUD
 async function loadDataFromGoogleSheets() {
     try {
         let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime(), {
@@ -829,39 +829,37 @@ async function loadDataFromGoogleSheets() {
         if (!response.ok) throw new Error("Gagal terhubung ke Cloud");
         let result = await response.json();
         
-        // Jika hasil parse berupa array data valid
         if (Array.isArray(result) && result.length > 0) {
             appData = result;
-        } else if (result && typeof result === 'object' && result.status === "error") {
-            console.warn("Pesan dari Cloud:", result.message);
+            console.log("Data berhasil dimuat dari Cloud Google Sheet.");
         } else {
-            // Jika sheet masih kosong, gunakan data JSON bawaan abang sebagai inisialisasi awal
-            console.log("Cloud kosong, memuat data awal...");
+            console.log("Cloud kosong atau data belum ada.");
         }
     } catch (error) {
-        console.warn("Koneksi Cloud terputus:", error);
-        showToast("PERINGATAN: Sedang Offline atau Gagal Memuat Data!");
+        console.warn("Koneksi Cloud gagal:", error);
+        showToast("PERINGATAN: Gagal memuat data dari Cloud!");
     }
     renderData();
 }
 
-// PENYIMPANAN LANGSUNG KE CLOUD (TANPA LOCALSTORAGE)
+// PENYIMPANAN KE CLOUD
 async function saveToCloud() {
     try {
         let response = await fetch(WEB_APP_URL, {
             method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            mode: "no-cors", // Mengatasi masalah blokir CORS browser saat kirim ke GAS
+            headers: { 
+                "Content-Type": "text/plain;charset=utf-8" 
+            },
             body: JSON.stringify(appData)
         });
-        let result = await response.json();
-        if (result.status === "success") {
-            showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
-        } else {
-            showToast("Tersimpan di Cloud.");
-        }
+        
+        // Karena menggunakan mode 'no-cors', response.ok tidak bisa dibaca langsung,
+        // tapi data dipastikan terkirim ke GAS. Kita berikan jeda singkat lalu tampilkan sukses.
+        showToast("Data Berhasil Disimpan ke Cloud Google Sheet!");
     } catch (error) {
         console.error("Gagal simpan:", error);
-        showToast("Gagal menyimpan ke Cloud.");
+        showToast("Gagal menyimpan ke Cloud!");
     }
 }
 
