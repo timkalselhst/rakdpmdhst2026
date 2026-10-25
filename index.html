@@ -1406,11 +1406,9 @@ function importJSON(event) {
         try {
             let data = JSON.parse(e.target.result);
             if (Array.isArray(data) && confirm("Pulihkan dan simpan permanen data dari file JSON ini ke Cloud Google Sheets?")) {
-                appData = data; // Masukkan data ke variabel utama
-                await saveLocalStorage(); // Kirim ke Cloud Google Sheets
-                
-                renderData(); // <--- INI YANG KURANG: Perintah untuk menggambar ulang tabel ke layar seketika!
-                
+                appData = data; 
+                await saveLocalStorage(); 
+                renderData(); 
                 showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
             }
         } catch (err) { 
