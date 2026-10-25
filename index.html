@@ -436,18 +436,20 @@
         <div class="card card-3d-timbul mb-4 p-1">
             <div class="card-body p-2 px-3">
                 <div class="row g-2 align-items-center">
-                    <div class="col-12 col-md-7">
+                    <div class="col-12 col-md-6">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text border-0 text-muted fw-bold" style="background: transparent;"><i class="bi bi-search text-primary"></i> Pencarian:</span>
                             <input type="text" id="searchQuery" class="form-control form-control-sm" placeholder="Cari Kode Rekening / Uraian..." onkeyup="renderData()">
                         </div>
                     </div>
-                    <div class="col-12 col-md-5 text-end">
+                    <div class="col-12 col-md-6 text-end">
                         <button id="btnTambahData" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="openAddModal()"><i class="bi bi-plus-circle me-1"></i> Input RAK</button>
+                        <!-- TOMBOL SIMPAN MANUAL KE CLOUD BARU -->
+                        <button id="btnSimpanCloud" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="saveToCloudManual()" title="Simpan Permanen ke Cloud Google Sheet"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan ke Cloud</button>
                         <button class="btn btn-success btn-sm fw-bold me-1" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel-fill me-1"></i> Excel</button>
                         <button class="btn btn-sm me-1" onclick="exportJSON()"><i class="bi bi-download me-1"></i> Download JSON</button>
                         <input type="file" id="importJsonFile" style="display: none;" accept=".json" onchange="importJSON(event)">
-                        <button id="btnImportJson" class="btn btn-warning btn-sm d-none" onclick="document.getElementById('importJsonFile').click()"><i class="bi bi-upload me-1"></i> Import JSON</button>
+                        <button id="btnImportJson" class="btn btn-warning btn-sm d-none me-1" onclick="document.getElementById('importJsonFile').click()"><i class="bi bi-upload me-1"></i> Import JSON</button>
                     </div>
                 </div>
             </div>
@@ -847,18 +849,32 @@ async function saveToCloud() {
     try {
         let response = await fetch(WEB_APP_URL, {
             method: "POST",
-            mode: "no-cors", // Mengatasi masalah blokir CORS browser saat kirim ke GAS
+            mode: "no-cors",
             headers: { 
                 "Content-Type": "text/plain;charset=utf-8" 
             },
             body: JSON.stringify(appData)
         });
-        
-        // Karena menggunakan mode 'no-cors', response.ok tidak bisa dibaca langsung,
-        // tapi data dipastikan terkirim ke GAS. Kita berikan jeda singkat lalu tampilkan sukses.
-        showToast("Data Berhasil Disimpan ke Cloud Google Sheet!");
     } catch (error) {
         console.error("Gagal simpan:", error);
+    }
+}
+
+// FUNGSI UNTUK TOMBOL MANUAL "SIMPAN KE CLOUD"
+async function saveToCloudManual() {
+    try {
+        showToast("Menyimpan data ke Cloud...");
+        await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { 
+                "Content-Type": "text/plain;charset=utf-8" 
+            },
+            body: JSON.stringify(appData)
+        });
+        showToast("Data Berhasil Disimpan ke Cloud Google Sheet!");
+    } catch (error) {
+        console.error("Gagal simpan manual:", error);
         showToast("Gagal menyimpan ke Cloud!");
     }
 }
@@ -1233,6 +1249,7 @@ function updateUserInterface() {
     const btnLoginLogout = document.getElementById('btnLoginLogout');
     const userBadge = document.getElementById('userBadge');
     const btnTambahData = document.getElementById('btnTambahData');
+    const btnSimpanCloud = document.getElementById('btnSimpanCloud');
     const btnImportJson = document.getElementById('btnImportJson');
     const isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
 
@@ -1249,6 +1266,7 @@ function updateUserInterface() {
     }
 
     if (btnTambahData) btnTambahData.classList.toggle('d-none', !isSuperAdmin);
+    if (btnSimpanCloud) btnSimpanCloud.classList.toggle('d-none', !isSuperAdmin);
     if (btnImportJson) btnImportJson.classList.toggle('d-none', !isSuperAdmin);
 }
 
