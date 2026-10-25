@@ -206,14 +206,6 @@
 
         .custom-toast { position: fixed; top: 20px; right: 20px; z-index: 999999; background: #10b981; color: #ffffff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-weight: 700; display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: transform 0.3s ease-in-out; }
         .custom-toast.show { transform: translateX(0); }
-
-        .real-ant { position: fixed; width: 14px !important; height: 8px !important; pointer-events: none; z-index: 99999; transform-origin: center center; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3)); }
-        .ant-svg { width: 100%; height: 100%; overflow: visible; }
-        .ant-leg { stroke: #111111; stroke-width: 1px; stroke-linecap: round; animation: realisticWalk 0.08s infinite alternate ease-in-out; }
-        .leg-left-1 { animation-delay: 0s; } .leg-right-1 { animation-delay: 0.04s; }
-        .leg-left-2 { animation-delay: 0.02s; } .leg-right-2 { animation-delay: 0.06s; }
-        .leg-left-3 { animation-delay: 0.05s; } .leg-right-3 { animation-delay: 0.01s; }
-        @keyframes realisticWalk { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(-1px) rotate(10deg); } }
     </style>
 </head>
 <body>
@@ -250,9 +242,6 @@
         <i class="bi bi-check-circle-fill fs-5"></i>
         <span id="toastMessage">Data Rekening Belanja Berhasil Disimpan!</span>
     </div>
-
-    <!-- Canvas Efek Daun Realistis 3D Melayang -->
-    <canvas id="leafCanvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999;"></canvas>
 
     <!-- Navbar Utama -->
     <nav class="navbar navbar-expand-lg sticky-top mb-3">
@@ -444,7 +433,6 @@
                     </div>
                     <div class="col-12 col-md-6 text-end">
                         <button id="btnTambahData" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="openAddModal()"><i class="bi bi-plus-circle me-1"></i> Input RAK</button>
-                        <!-- TOMBOL SIMPAN MANUAL KE CLOUD BARU -->
                         <button id="btnSimpanCloud" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="saveToCloudManual()" title="Simpan Permanen ke Cloud Google Sheet"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan ke Cloud</button>
                         <button class="btn btn-success btn-sm fw-bold me-1" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel-fill me-1"></i> Excel</button>
                         <button class="btn btn-sm me-1" onclick="exportJSON()"><i class="bi bi-download me-1"></i> Download JSON</button>
@@ -565,9 +553,7 @@
 <script>
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzkxCEQLgTXF-bH4EmyQ0Pkl7I-FzzQjEJrYTF1YVs-tWZe0e2SKH12OAHoRFYvcy4CkQ/exec";
 
-// AUDIO CONTEXT UNTUK TAHAN BLOKIR BROWSER
 let globalAudioCtx = null;
-
 function unlockAudioContext() {
     if (!globalAudioCtx) {
         globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -576,7 +562,6 @@ function unlockAudioContext() {
         globalAudioCtx.resume();
     }
 }
-
 document.addEventListener('click', unlockAudioContext, { once: true });
 
 function playDangerSound() {
@@ -646,12 +631,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     initDonutChart();
     await loadDataFromGoogleSheets();                    
     renderData();                    
-    initRealAnts();
-    initFallingLeavesWithDelay();
     initVisiMisiTicker();
     startRealtimeSync();
 });
 
+// Sinkronisasi Latar Belakang Senyap (Silent Sync Antar Bidang)
 function startRealtimeSync() {
     setInterval(async () => {
         try {
@@ -664,14 +648,15 @@ function startRealtimeSync() {
                 if (Array.isArray(result) && result.length > 0) {
                     let currentLocalStr = JSON.stringify(appData);
                     let incomingStr = JSON.stringify(result);
-                    if (currentLocalStr !== incomingStr) {
+                    // Hanya perbarui jika ada perubahan dari admin lain DAN form modal sedang tidak aktif
+                    if (currentLocalStr !== incomingStr && !document.body.classList.contains('modal-open')) {
                         appData = result;
-                        renderData();
+                        updateGlobalTotalsQuick(); // Perbarui ringkasan total atas secara instan tanpa mengganggu tabel terbuka
                     }
                 }
             }
         } catch (err) {}
-    }, 10000);
+    }, 15000);
 }
 
 function initVisiMisiTicker() {
@@ -730,73 +715,6 @@ function formatAngkaTabel(val) {
     return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
 }
 
-function initFallingLeavesWithDelay() {
-    const leafCanvas = document.getElementById('leafCanvas');
-    if (!leafCanvas) return;
-    const ctx = leafCanvas.getContext('2d');
-    let width = leafCanvas.width = window.innerWidth;
-    let height = leafCanvas.height = window.innerHeight;
-
-    window.addEventListener('resize', () => {
-        width = leafCanvas.width = window.innerWidth;
-        height = leafCanvas.height = window.innerHeight;
-    });
-
-    const leaves = [];
-    class Leaf {
-        constructor() { this.reset(); }
-        reset() {
-            this.x = Math.random() * width; this.y = -40;
-            this.size = Math.random() * 14 + 12;
-            this.speedY = Math.random() * 1.1 + 0.6;
-            this.speedX = Math.random() * 0.8 - 0.4;
-            this.rotationZ = Math.random() * 360;
-            this.rotSpeedZ = (Math.random() - 0.5) * 1.8;
-            this.flipAngle = Math.random() * Math.PI * 2;
-            this.flipSpeed = Math.random() * 0.04 + 0.02;
-            this.opacity = Math.random() * 0.5 + 0.4;
-            const colors = [{main:'#4caf50',vein:'#2e7d32'},{main:'#81c784',vein:'#388e3c'},{main:'#fbc02d',vein:'#f57f17'},{main:'#fb8c00',vein:'#e65100'},{main:'#d84315',vein:'#bf360c'}];
-            const c = colors[Math.floor(Math.random() * colors.length)];
-            this.color = c.main; this.veinColor = c.vein;
-        }
-        update() {
-            this.y += this.speedY; this.x += Math.sin(this.y / 30) * 1.2 + this.speedX;
-            this.rotationZ += this.rotSpeedZ; this.flipAngle += this.flipSpeed;
-            if (this.y > height + 40) this.reset();
-        }
-        draw() {
-            ctx.save(); ctx.translate(this.x, this.y);
-            ctx.rotate((this.rotationZ * Math.PI) / 180);
-            ctx.scale(1, Math.cos(this.flipAngle));
-            ctx.globalAlpha = this.opacity;
-            const s = this.size;
-            ctx.beginPath(); ctx.moveTo(0, -s); ctx.bezierCurveTo(s*0.75,-s*0.5,s*0.85,s*0.3,0,s); ctx.bezierCurveTo(-s*0.85,s*0.3,-s*0.75,-s*0.5,0,-s); ctx.fillStyle = this.color; ctx.fill();
-            ctx.beginPath(); ctx.moveTo(0, -s*1.05); ctx.lineTo(0, s*1.25); ctx.strokeStyle = this.veinColor; ctx.lineWidth = 1.3; ctx.stroke();
-            ctx.restore();
-        }
-    }
-    for (let i = 0; i < 20; i++) leaves.push(new Leaf());
-
-    let isFallingActive = false;
-    function animateLeaves() {
-        ctx.clearRect(0, 0, width, height);
-        if (isFallingActive) leaves.forEach(l => { l.update(); l.draw(); });
-        requestAnimationFrame(animateLeaves);
-    }
-    animateLeaves();
-
-    setTimeout(() => {
-        isFallingActive = true;
-        setTimeout(() => {
-            isFallingActive = false;
-            setInterval(() => {
-                isFallingActive = true;
-                setTimeout(() => { isFallingActive = false; }, 120000);
-            }, 300000 + 120000);
-        }, 120000);
-    }, 300000);
-}
-
 async function loadDataFromGoogleSheets() {
     try {
         let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime(), {
@@ -814,6 +732,7 @@ async function loadDataFromGoogleSheets() {
     renderData();
 }
 
+// Penyimpanan Senyap ke Cloud (Silent Background Save)
 async function saveToCloud() {
     try {
         await fetch(WEB_APP_URL, {
@@ -892,46 +811,7 @@ function updatePejabatCard(bidangKey) {
     document.getElementById('pejabatCardContainer').style.background = data.bg;
 }
 
-function initRealAnts() {
-    const ants = []; 
-    const positions = [];
-    for (let i = 0; i < 2; i++) {
-        const ant = document.createElement('div');
-        ant.className = 'real-ant';
-        ant.innerHTML = `<svg class="ant-svg" viewBox="0 0 32 20"><line class="ant-leg leg-left-1" x1="12" y1="10" x2="6" y2="3" /><line class="ant-leg leg-left-2" x1="15" y1="10" x2="11" y2="2" /><line class="ant-leg leg-left-3" x1="18" y1="10" x2="16" y2="2" /><line class="ant-leg leg-right-1" x1="12" y1="10" x2="6" y2="17" /><line class="ant-leg leg-right-2" x1="15" y1="10" x2="11" y2="18" /><line class="ant-leg leg-right-3" x1="18" y1="10" x2="16" y2="18" /><ellipse cx="6" cy="10" rx="4.5" ry="3.5" fill="#111111" /><circle cx="13" cy="10" r="2.2" fill="#222222" /><circle cx="18.5" cy="10" r="3.2" fill="#000000" /></svg>`;
-        document.body.appendChild(ant); 
-        ants.push(ant);
-        positions.push({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
-    }
-    
-    let mouseX = window.innerWidth / 2; 
-    let mouseY = window.innerHeight / 2;
-    window.addEventListener('mousemove', (e) => { mouseX = e.clientX; mouseY = e.clientY; });
-
-    function crawlAnts() {
-        let curX = mouseX; let curY = mouseY;
-        positions.forEach((pos, idx) => {
-            let speed = idx === 0 ? 0.08 : 0.05; 
-            let offsetX = idx === 1 ? 18 : 0;
-            let offsetY = idx === 1 ? 12 : 0;
-            let targetX = curX - offsetX;
-            let targetY = curY - offsetY;
-            let dx = targetX - pos.x;
-            let dy = targetY - pos.y;
-            pos.x += dx * speed; pos.y += dy * speed;
-            if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-                ants[idx].style.transform = `rotate(${angle}deg)`;
-            }
-            ants[idx].style.left = `${pos.x}px`; ants[idx].style.top = `${pos.y}px`;
-            if (idx === 0) { curX = pos.x; curY = pos.y; }
-        });
-        requestAnimationFrame(crawlAnts);
-    }
-    crawlAnts();
-}
-
-// === FUNGSI BEDAH PRESISI (SURGICAL UPDATE) ===
+// === FUNGSI PEMBARUAN PRESISI (SURGICAL UPDATE & SILENT SAVE) ===
 function updateSingleRowUI(progId, rekId) {
     let prog = appData.find(p => p.id === progId);
     let rek = prog ? prog.rekeningList.find(r => r.id === rekId) : null;
@@ -1025,7 +905,7 @@ function updateGlobalTotalsQuick() {
     }
     updateDonutChart(displaySpj, displayPagu);
 }
-// ===============================================
+// ===============================================================
 
 function renderData() {
     const filterBidang = currentFilterBidang;
@@ -1128,7 +1008,7 @@ function renderData() {
                     mCells += `<td ${rAttr}>${formatAngkaTabel(rVal)}</td><td ${sAttr}>${formatAngkaTabel(sVal)}</td>`;
                 }
 
-                // Baris tabel dengan ID unik untuk target Surgical Update
+                // Baris tabel dengan ID unik untuk target Surgical Update tanpa kedip
                 tableHTML += `<tr class="row-rekening" id="row-rek-${rek.id}">
                     <td class="text-start font-monospace ps-2 fw-bold col-kode-rekening">${rek.kodeRekening}</td>
                     <td class="text-start ps-2 col-uraian">${rek.uraian}</td>
@@ -1167,8 +1047,8 @@ function openDirectRakModal(progId, rekId, mIdx) {
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
     if (val !== null) { 
         rek.rak[mIdx] = parseCurrencyNumber(val); 
-        saveToCloud(); 
-        updateSingleRowUI(progId, rekId); // <--- Diperbarui secara instan tanpa re-render global!
+        saveToCloud(); // Silent background save
+        updateSingleRowUI(progId, rekId); // Instant local update tanpa re-render global
         showToast("RAK Diperbarui!"); 
     }
 }
@@ -1221,12 +1101,12 @@ function saveDetailSpj() {
             rek.spj[mIdx] = sum;
             
             let totalSpj = rek.spj.reduce((a, b) => a + b, 0);
-            if (totalSpj > totalSpj) { // Penanganan peringatan bahaya tetap aktif
+            if (totalSpj > rek.pagu) {
                 playDangerSound();
             }
 
-            saveToCloud();
-            updateSingleRowUI(progId, rekId); // <--- Diperbarui secara instan tanpa re-render global!
+            saveToCloud(); // Silent background save
+            updateSingleRowUI(progId, rekId); // Instant local update tanpa re-render global
             showToast("Pengeluaran Berhasil Disimpan!");
         }
     } else {
