@@ -730,7 +730,6 @@ async function loadDataFromGoogleSheets() {
     renderData();
 }
 
-// Penyimpanan Senyap Latar Belakang (Non-Blocking)
 function saveToCloud() {
     setTimeout(async () => {
         try {
@@ -988,6 +987,7 @@ function renderData() {
                 sumP += rek.pagu; sumR += totS; sumS += sisaP; 
                 displayPagu += rek.pagu; displaySpj += totS;
 
+                // PASTIKAN SUPER ADMIN BISA MENGEDIT DI SEMUA BIDANG TANPA TERKUNCI
                 let canEdit = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
                 let mCells = ''; let cumSpj = 0;
 
@@ -1047,8 +1047,8 @@ function openDirectRakModal(progId, rekId, mIdx) {
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
     if (val !== null) { 
         rek.rak[mIdx] = parseCurrencyNumber(val); 
-        updateSingleRowUI(progId, rekId); // Perbarui baris sel secara instan tanpa re-render global
-        saveToCloud(); // Kirim senyap di background tanpa menunggu
+        updateSingleRowUI(progId, rekId); 
+        saveToCloud(); 
         showToast("RAK Diperbarui Instan!"); 
     }
 }
