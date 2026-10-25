@@ -635,7 +635,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     startRealtimeSync();
 });
 
-// Sinkronisasi Latar Belakang Senyap (Silent Sync Antar Bidang)
 function startRealtimeSync() {
     setInterval(async () => {
         try {
@@ -731,15 +730,18 @@ async function loadDataFromGoogleSheets() {
     renderData();
 }
 
-async function saveToCloud() {
-    try {
-        await fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(appData)
-        });
-    } catch (error) {}
+// Penyimpanan Senyap Latar Belakang (Non-Blocking)
+function saveToCloud() {
+    setTimeout(async () => {
+        try {
+            await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(appData)
+            });
+        } catch (error) {}
+    }, 10);
 }
 
 async function saveToCloudManual() {
@@ -986,7 +988,6 @@ function renderData() {
                 sumP += rek.pagu; sumR += totS; sumS += sisaP; 
                 displayPagu += rek.pagu; displaySpj += totS;
 
-                // PASTIKAN SUPER ADMIN BISA MENGEDIT DI SEMUA BIDANG
                 let canEdit = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
                 let mCells = ''; let cumSpj = 0;
 
@@ -1039,14 +1040,16 @@ function renderData() {
 
 function openDirectRakModal(progId, rekId, mIdx) {
     if (!currentUser) return;
-    let prog = appData.find(p => p.id === progId); let rek = prog?.rekeningList.find(r => r.id === rekId);
+    let prog = appData.find(p => p.id === progId); 
+    let rek = prog?.rekeningList.find(r => r.id === rekId);
     if (!rek) return;
+
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
     if (val !== null) { 
         rek.rak[mIdx] = parseCurrencyNumber(val); 
-        saveToCloud(); 
-        updateSingleRowUI(progId, rekId); 
-        showToast("RAK Diperbarui!"); 
+        updateSingleRowUI(progId, rekId); // Perbarui baris sel secara instan tanpa re-render global
+        saveToCloud(); // Kirim senyap di background tanpa menunggu
+        showToast("RAK Diperbarui Instan!"); 
     }
 }
 
@@ -1102,8 +1105,8 @@ function saveDetailSpj() {
                 playDangerSound();
             }
 
-            saveToCloud(); 
-            updateSingleRowUI(progId, rekId); 
+            updateSingleRowUI(progId, rekId);
+            saveToCloud();
             showToast("Pengeluaran Berhasil Disimpan!");
         }
     } else {
