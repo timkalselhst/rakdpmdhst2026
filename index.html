@@ -664,7 +664,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     startRealtimeSync();
 });
 
-// FUNGSI BACKGROUND POLLING REALTIME OTOMATIS SETIAP 10 DETIK
+// FUNGSI BACKGROUND POLLING REALTIME OTOMATIS DENGAN PENGAMAN DATA LOKAL
 function startRealtimeSync() {
     setInterval(async () => {
         try {
@@ -674,20 +674,25 @@ function startRealtimeSync() {
             });
             if (response.ok) {
                 let result = await response.json();
-                if (Array.isArray(result)) {
+                
+                // PENGAMAN UTAMA: Pastikan hasil dari Cloud benar-benar berupa array yang ada isinya!
+                if (Array.isArray(result) && result.length > 0) {
                     let currentLocalStr = JSON.stringify(appData);
                     let incomingStr = JSON.stringify(result);
                     
-                    // Jika ada perubahan data di server dari perangkat lain, re-render otomatis
+                    // Hanya update jika data di server berbeda dengan data lokal
                     if (currentLocalStr !== incomingStr) {
                         appData = result;
                         renderData();
                         console.log("Data diperbarui secara realtime dari Cloud.");
                     }
+                } else {
+                    console.warn("Respons dari Cloud kosong, mempertahankan data lokal agar tidak hilang.");
+                    // JANGAN TIMPA appData DENGAN KOSONG! Biarkan data lokal tetap aman terpampang di layar.
                 }
             }
         } catch (err) {
-            console.warn("Sinkronisasi latar belakang tertunda (offline).");
+            console.warn("Sinkronisasi latar belakang tertunda (offline), mempertahankan data lokal.");
         }
     }, 10000); // Cek perubahan setiap 10 detik
 }
