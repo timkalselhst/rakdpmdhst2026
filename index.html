@@ -838,16 +838,16 @@ async function loadDataFromGoogleSheets() {
         if (!response.ok) throw new Error("Gagal terhubung ke Cloud");
         let result = await response.json();
         
-        if (Array.isArray(result)) {
+        // PENGAMAN: Hanya masukkan ke appData jika dari Cloud benar-benar ada isinya
+        if (Array.isArray(result) && result.length > 0) {
             appData = result;
+            console.log("Data berhasil dimuat dari Cloud:", appData.length, "program.");
         } else {
-            appData = [];
+            console.warn("Cloud mengembalikan data kosong, mempertahankan status lokal.");
         }
     } catch (error) {
         console.warn("Koneksi Cloud terputus:", error);
-        // PROTEKSI OFFLINE: JIKA GAGAL/OFFLINE, KOSONGKAN DATA AGAR TIDAK MENAMPILKAN DATA LAMA
-        appData = [];
-        showToast("PERINGATAN: Sedang Offline! Data tidak dapat dimuat.");
+        showToast("PERINGATAN: Gagal memuat dari Cloud.");
     }
     renderData();
 }
@@ -1410,11 +1410,15 @@ function importJSON(event) {
     reader.onload = async function(e) {
         try {
             let data = JSON.parse(e.target.result);
-            if (Array.isArray(data) && confirm("Pulihkan dan simpan permanen data dari file JSON ini ke Cloud Google Sheets?")) {
-                appData = data; 
-                await saveLocalStorage(); 
-                renderData(); 
-                showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
+            if (Array.isArray(data) && data.length > 0) {
+                if (confirm("Pulihkan dan simpan permanen data dari file JSON ini ke Cloud Google Sheets?")) {
+                    appData = data; // Langsung masukkan ke variabel global
+                    renderData();   // Langsung render ke layar agar tidak kosong
+                    await saveLocalStorage(); // Kirim ke Cloud
+                    showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
+                }
+            } else {
+                alert("File JSON tidak berisi data array yang valid!");
             }
         } catch (err) { 
             alert("Format file JSON tidak valid!"); 
