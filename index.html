@@ -647,24 +647,21 @@ function showToast(msg) {
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
-    // 1. BERSIHKAN TOTAL LOCALSTORAGE SEJAK AWAL DIMUAT (MENGHINDARI DATA BASI)
-    localStorage.clear();
-
     updateUserInterface();
     initDonutChart();
     
-    // 2. AMBIL DATA MUTLAK DARI CLOUD (JIKA OFFLINE, DATA KOSONG)
+    // AMBIL DATA 100% MURNI DARI CLOUD
     await loadDataFromGoogleSheets();                    
     renderData();                    
     initRealAnts();
     initFallingLeavesWithDelay();
     initVisiMisiTicker();
 
-    // 4. JALANKAN BACKGROUND POLLING UNTUK SINKRONISASI REALTIME OTOMATIS
+    // BACKGROUND POLLING REALTIME OTOMATIS
     startRealtimeSync();
 });
 
-// FUNGSI BACKGROUND POLLING REALTIME OTOMATIS DENGAN PENGAMAN DATA LOKAL
+// FUNGSI BACKGROUND POLLING REALTIME OTOMATIS SETIAP 10 DETIK
 function startRealtimeSync() {
     setInterval(async () => {
         try {
@@ -674,27 +671,21 @@ function startRealtimeSync() {
             });
             if (response.ok) {
                 let result = await response.json();
-                
-                // PENGAMAN UTAMA: Pastikan hasil dari Cloud benar-benar berupa array yang ada isinya!
                 if (Array.isArray(result) && result.length > 0) {
                     let currentLocalStr = JSON.stringify(appData);
                     let incomingStr = JSON.stringify(result);
                     
-                    // Hanya update jika data di server berbeda dengan data lokal
                     if (currentLocalStr !== incomingStr) {
                         appData = result;
                         renderData();
                         console.log("Data diperbarui secara realtime dari Cloud.");
                     }
-                } else {
-                    console.warn("Respons dari Cloud kosong, mempertahankan data lokal agar tidak hilang.");
-                    // JANGAN TIMPA appData DENGAN KOSONG! Biarkan data lokal tetap aman terpampang di layar.
                 }
             }
         } catch (err) {
-            console.warn("Sinkronisasi latar belakang tertunda (offline), mempertahankan data lokal.");
+            console.warn("Sinkronisasi latar belakang tertunda (offline).");
         }
-    }, 10000); // Cek perubahan setiap 10 detik
+    }, 10000);
 }
 
 function initVisiMisiTicker() {
@@ -702,11 +693,11 @@ function initVisiMisiTicker() {
     if (!tickerTextEl) return;
 
     const items = [
-        "東 VISI KABUPATEN HULU SUNGAI TENGAH: Terwujudnya Hulu Sungai Tengah Yang Religius, Sejahtera dan Bermartabat",
-        "識 MISI 1: Mewujudkan Perubahan Sosial Masyarakat Menuju Masyarakat Adaptif, Berdaya Saing Dan Berkualitas Tinggi Yang Religius Berbudaya.",
-        "識 MISI 2: Mewujudkan Perubahan Perekonomian Daerah Secara Merata Dengan Pengembangan Menyeluruh Dari Hulu Dan Hilirisasi Pertanian Serta Sektor Potensial Pendukung Dengan Prinsip Kerakyatan Yang Memperhatikan Kesinambungan Pembangunan.",
-        "識 MISI 3: Meningkatkan Infrastruktur Pelayanan Publik Yang Merata Dengan Prinsip Berkelanjutan Dalam Mendukung Pengembangan Sektor Potensial Perekonomian Daerah Dan Pelayanan Masyarakat.",
-        "識 MISI 4: Mewujudkan Pemerintahan Yang Tanggap Dan Santun Dengan Tata Kelola Profesional."
+        "VISI KABUPATEN HULU SUNGAI TENGAH: Terwujudnya Hulu Sungai Tengah Yang Religius, Sejahtera dan Bermartabat",
+        "MISI 1: Mewujudkan Perubahan Sosial Masyarakat Menuju Masyarakat Adaptif, Berdaya Saing Dan Berkualitas Tinggi Yang Religius Berbudaya.",
+        "MISI 2: Mewujudkan Perubahan Perekonomian Daerah Secara Merata Dengan Pengembangan Menyeluruh Dari Hulu Dan Hilirisasi Pertanian Serta Sektor Potensial Pendukung Dengan Prinsip Kerakyatan Yang Memperhatikan Kesinambungan Pembangunan.",
+        "MISI 3: Meningkatkan Infrastruktur Pelayanan Publik Yang Merata Dengan Prinsip Berkelanjutan Dalam Mendukung Pengembangan Sektor Potensial Perekonomian Daerah Dan Pelayanan Masyarakat.",
+        "MISI 4: Mewujudkan Pemerintahan Yang Tanggap Dan Santun Dengan Tata Kelola Profesional."
     ];
 
     let currentIndex = 0;
@@ -828,7 +819,7 @@ function initFallingLeavesWithDelay() {
     }, 300000);
 }
 
-// 2. FUNGSI PEMUATAN DATA MUTLAK DARI CLOUD (JIKA OFFLINE, DATA KOSONG)
+// PEMUATAN DATA MURNI DARI CLOUD
 async function loadDataFromGoogleSheets() {
     try {
         let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime(), {
@@ -838,22 +829,20 @@ async function loadDataFromGoogleSheets() {
         if (!response.ok) throw new Error("Gagal terhubung ke Cloud");
         let result = await response.json();
         
-        // PENGAMAN: Hanya masukkan ke appData jika dari Cloud benar-benar ada isinya
         if (Array.isArray(result) && result.length > 0) {
             appData = result;
-            console.log("Data berhasil dimuat dari Cloud:", appData.length, "program.");
         } else {
-            console.warn("Cloud mengembalikan data kosong, mempertahankan status lokal.");
+            console.warn("Cloud mengembalikan data kosong.");
         }
     } catch (error) {
         console.warn("Koneksi Cloud terputus:", error);
-        showToast("PERINGATAN: Gagal memuat dari Cloud.");
+        showToast("PERINGATAN: Sedang Offline! Data gagal dimuat.");
     }
     renderData();
 }
 
-// 3. FUNGSI PENYIMPANAN LANGSUNG KE CLOUD (OVERWRITE MASTER DATABASE)
-async function saveLocalStorage() {
+// PENYIMPANAN LANGSUNG KE CLOUD (TANPA LOCALSTORAGE)
+async function saveToCloud() {
     try {
         let response = await fetch(WEB_APP_URL, {
             method: "POST",
@@ -1122,7 +1111,7 @@ function openDirectRakModal(progId, rekId, mIdx) {
     let prog = appData.find(p => p.id === progId); let rek = prog?.rekeningList.find(r => r.id === rekId);
     if (!rek) return;
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
-    if (val !== null) { rek.rak[mIdx] = parseCurrencyNumber(val); saveLocalStorage(); renderData(); showToast("RAK Diperbarui!"); }
+    if (val !== null) { rek.rak[mIdx] = parseCurrencyNumber(val); saveToCloud(); renderData(); showToast("RAK Diperbarui!"); }
 }
 
 function openDirectSpjModal(progId, rekId, mIdx) {
@@ -1178,7 +1167,7 @@ function saveDetailSpj() {
                 playDangerSound();
             }
 
-            saveLocalStorage();
+            saveToCloud();
             renderData();
             showToast("Pengeluaran Berhasil Disimpan!");
         }
@@ -1215,13 +1204,12 @@ function validateSpjColorInModal() {
 
 async function handleAuthAction() {
     if (currentUser) {
-        await saveLocalStorage();
+        await saveToCloud();
         currentUser = null; 
         sessionStorage.removeItem('sipd_user');
-        localStorage.clear(); // Bersihkan memori saat logout
         updateUserInterface(); 
         renderData();
-        showToast("Sesi Berakhir. Data Berhasil Diamankan!");
+        showToast("Sesi Berakhir. Data Berhasil Disimpan ke Cloud!");
     }
 }
 
@@ -1336,7 +1324,7 @@ function saveData(e) {
             const rekIndex = prog.rekeningList.findIndex(r => r.id === rekId);
             if (rekIndex !== -1) prog.rekeningList[rekIndex] = newRekening;
         }
-        saveLocalStorage();
+        saveToCloud();
         renderData();
 
         let modalEl = document.getElementById('dataModal');
@@ -1361,7 +1349,7 @@ function saveData(e) {
                 rekeningList: [newRekening]
             });
         }
-        saveLocalStorage();
+        saveToCloud();
         renderData();
 
         showToast("Rekening Berhasil Ditambahkan!");
@@ -1387,7 +1375,7 @@ function deleteData(progId, rekId) {
         if (prog) {
             prog.rekeningList = prog.rekeningList.filter(r => r.id !== rekId);
             if (prog.rekeningList.length === 0) appData = appData.filter(p => p.id !== progId);
-            saveLocalStorage(); renderData(); showToast("Data Dihapus!");
+            saveToCloud(); renderData(); showToast("Data Dihapus!");
         }
     }
 }
@@ -1410,15 +1398,11 @@ function importJSON(event) {
     reader.onload = async function(e) {
         try {
             let data = JSON.parse(e.target.result);
-            if (Array.isArray(data) && data.length > 0) {
-                if (confirm("Pulihkan dan simpan permanen data dari file JSON ini ke Cloud Google Sheets?")) {
-                    appData = data; // Langsung masukkan ke variabel global
-                    renderData();   // Langsung render ke layar agar tidak kosong
-                    await saveLocalStorage(); // Kirim ke Cloud
-                    showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
-                }
-            } else {
-                alert("File JSON tidak berisi data array yang valid!");
+            if (Array.isArray(data) && confirm("Pulihkan dan simpan permanen data dari file JSON ini ke Cloud Google Sheets?")) {
+                appData = data; 
+                renderData(); 
+                await saveToCloud(); 
+                showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
             }
         } catch (err) { 
             alert("Format file JSON tidak valid!"); 
