@@ -322,7 +322,7 @@
                 <div id="pejabatCardContainer" class="card card-3d-timbul h-100">
                     <div class="card-body p-3 d-flex align-items-center justify-content-center">
                         <div class="pejabat-card-body w-100">
-                            <img id="pejabatFoto" src="kadis.png" alt="Foto Pejabat" class="pejabat-avatar" onerror="this.src='https://via.placeholder.com/200?text=Foto';">
+                            <img id="pejabatFoto" alt="Foto Pejabat" class="pejabat-avatar" onerror="this.src='https://via.placeholder.com/200?text=Foto';">
                             <div class="flex-grow-1 text-start">
                                 <h5 id="pejabatJabatan" class="pejabat-text-title mb-0">KEPALA DINAS PEMBERDAYAAN MASYARAKAT DAN DESA</h5>
                                 <div id="pejabatNama" class="pejabat-text-nama">EDDY RAHMAWAN, SSTP., M.IP</div>
@@ -648,10 +648,9 @@ function startRealtimeSync() {
                 if (Array.isArray(result) && result.length > 0) {
                     let currentLocalStr = JSON.stringify(appData);
                     let incomingStr = JSON.stringify(result);
-                    // Hanya perbarui jika ada perubahan dari admin lain DAN form modal sedang tidak aktif
                     if (currentLocalStr !== incomingStr && !document.body.classList.contains('modal-open')) {
                         appData = result;
-                        updateGlobalTotalsQuick(); // Perbarui ringkasan total atas secara instan tanpa mengganggu tabel terbuka
+                        updateGlobalTotalsQuick();
                     }
                 }
             }
@@ -732,7 +731,6 @@ async function loadDataFromGoogleSheets() {
     renderData();
 }
 
-// Penyimpanan Senyap ke Cloud (Silent Background Save)
 async function saveToCloud() {
     try {
         await fetch(WEB_APP_URL, {
@@ -811,7 +809,6 @@ function updatePejabatCard(bidangKey) {
     document.getElementById('pejabatCardContainer').style.background = data.bg;
 }
 
-// === FUNGSI PEMBARUAN PRESISI (SURGICAL UPDATE & SILENT SAVE) ===
 function updateSingleRowUI(progId, rekId) {
     let prog = appData.find(p => p.id === progId);
     let rek = prog ? prog.rekeningList.find(r => r.id === rekId) : null;
@@ -835,7 +832,8 @@ function updateSingleRowUI(progId, rekId) {
 
         let cellIdx = 6;
         let cumSpj = 0;
-        let canEdit = currentUser && (currentUser.role === 'SUPER_ADMIN' || currentUser.bidang === prog.bidang);
+        let isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
+        let canEdit = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
 
         for (let i = 0; i < 12; i++) {
             let rVal = rek.rak[i] || 0;
@@ -905,7 +903,6 @@ function updateGlobalTotalsQuick() {
     }
     updateDonutChart(displaySpj, displayPagu);
 }
-// ===============================================================
 
 function renderData() {
     const filterBidang = currentFilterBidang;
@@ -989,7 +986,8 @@ function renderData() {
                 sumP += rek.pagu; sumR += totS; sumS += sisaP; 
                 displayPagu += rek.pagu; displaySpj += totS;
 
-                let canEdit = currentUser && (currentUser.role === 'SUPER_ADMIN' || currentUser.bidang === prog.bidang);
+                // PASTIKAN SUPER ADMIN BISA MENGEDIT DI SEMUA BIDANG
+                let canEdit = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
                 let mCells = ''; let cumSpj = 0;
 
                 for (let i = 0; i < 12; i++) {
@@ -1008,7 +1006,6 @@ function renderData() {
                     mCells += `<td ${rAttr}>${formatAngkaTabel(rVal)}</td><td ${sAttr}>${formatAngkaTabel(sVal)}</td>`;
                 }
 
-                // Baris tabel dengan ID unik untuk target Surgical Update tanpa kedip
                 tableHTML += `<tr class="row-rekening" id="row-rek-${rek.id}">
                     <td class="text-start font-monospace ps-2 fw-bold col-kode-rekening">${rek.kodeRekening}</td>
                     <td class="text-start ps-2 col-uraian">${rek.uraian}</td>
@@ -1047,8 +1044,8 @@ function openDirectRakModal(progId, rekId, mIdx) {
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
     if (val !== null) { 
         rek.rak[mIdx] = parseCurrencyNumber(val); 
-        saveToCloud(); // Silent background save
-        updateSingleRowUI(progId, rekId); // Instant local update tanpa re-render global
+        saveToCloud(); 
+        updateSingleRowUI(progId, rekId); 
         showToast("RAK Diperbarui!"); 
     }
 }
@@ -1105,8 +1102,8 @@ function saveDetailSpj() {
                 playDangerSound();
             }
 
-            saveToCloud(); // Silent background save
-            updateSingleRowUI(progId, rekId); // Instant local update tanpa re-render global
+            saveToCloud(); 
+            updateSingleRowUI(progId, rekId); 
             showToast("Pengeluaran Berhasil Disimpan!");
         }
     } else {
