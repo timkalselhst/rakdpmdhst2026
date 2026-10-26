@@ -834,13 +834,20 @@ function updateSingleRowUI(progId, rekId) {
         let cellIdx = 6;
         let cumSpj = 0;
         let isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
-        let canEditSpj = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
+        let canEditRak = isSuperAdmin;
+        let canEditSpj = isSuperAdmin || (currentUser && currentUser.role === 'ADMIN' && currentUser.bidang === prog.bidang);
 
         for (let i = 0; i < 12; i++) {
             let rVal = rek.rak[i] || 0;
             let sVal = rek.spj[i] || 0;
             
             cells[cellIdx].innerText = formatAngkaTabel(rVal);
+            cells[cellIdx].className = canEditRak ? "cell-rak cell-rak-clickable" : "cell-rak";
+            if (canEditRak) {
+                cells[cellIdx].setAttribute("onclick", `openDirectRakModal('${prog.id}', '${rek.id}', ${i})`);
+            } else {
+                cells[cellIdx].removeAttribute("onclick");
+            }
             cellIdx++;
 
             let spjCell = cells[cellIdx];
@@ -854,7 +861,16 @@ function updateSingleRowUI(progId, rekId) {
                 else spjCls = 'spj-merah';
             }
             spjCell.className = `${spjCls} ${canEditSpj ? 'cell-spj-clickable' : ''}`.trim();
+            if (canEditSpj) {
+                spjCell.setAttribute("onclick", `openDirectSpjModal('${prog.id}', '${rek.id}', ${i})`);
+            } else {
+                spjCell.removeAttribute("onclick");
+            }
             cellIdx++;
+        }
+
+        if (isSuperAdmin && cells.length > cellIdx) {
+            cells[cellIdx].innerHTML = `<button class="btn btn-sm btn-outline-info py-0 px-1 me-1" onclick="openEditModal('${prog.id}','${rek.id}')"><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteData('${prog.id}','${rek.id}')"><i class="bi bi-trash"></i></button>`;
         }
     }
     updateGlobalTotalsQuick();
@@ -987,7 +1003,6 @@ function renderData() {
                 sumP += rek.pagu; sumR += totS; sumS += sisaP; 
                 displayPagu += rek.pagu; displaySpj += totS;
 
-                // ATURAN MUTLAK: RAK HANYA BISA DIEDIT SUPER ADMIN. ADMIN BIDANG HANYA BISA EDIT SPJ DI BIDANGNYA.
                 let canEditRak = isSuperAdmin;
                 let canEditSpj = isSuperAdmin || (currentUser && currentUser.role === 'ADMIN' && currentUser.bidang === prog.bidang);
                 
@@ -1054,7 +1069,7 @@ function openDirectRakModal(progId, rekId, mIdx) {
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
     if (val !== null) { 
         rek.rak[mIdx] = parseCurrencyNumber(val); 
-        updateSingleRowUI(progId, rekId); // SURGICAL UPDATE MURNI
+        updateSingleRowUI(progId, rekId); 
         saveToCloud(); 
         showToast("RAK Diperbarui Instan!"); 
     }
@@ -1078,24 +1093,34 @@ function openDirectSpjModal(progId, rekId, mIdx) {
     document.getElementById('isDirectMode').value = "1";
     document.getElementById('detailSpjTitle').innerText = `Rincian Term (${namaBulanPanjang[mIdx]}) - ${rek.uraian}`;
     
-    if (!rek.spjDetails) { 
+    if (!rek.spjDetails || !Array.isArray(rek.spjDetails) || rek.spjDetails.length !== 12) { 
         rek.spjDetails = Array(12).fill(0).map(() => Array(10).fill(0)); 
         for(let i = 0; i < 12; i++) if(rek.spj[i] > 0) rek.spjDetails[i][0] = rek.spj[i]; 
     }
     
     tempCurrentSpjDetails = JSON.parse(JSON.stringify(rek.spjDetails));
     for(let t = 0; t < 10; t++) {
-        document.getElementById(`term_${t}`).value = tempCurrentSpjDetails[mIdx][t] === 0 ? '' : new Intl.NumberFormat('id-ID').format(tempCurrentSpjDetails[mIdx][t]);
+        let termVal = tempCurrentSpjDetails[mIdx][t] || 0;
+        document.getElementById(`term_${t}`).value = termVal === 0 ? '' : new Intl.NumberFormat('id-ID').format(termVal);
     }
     calculateTermTotal(); 
-    new bootstrap.Modal(document.getElementById('detailSpjModal')).show();
+    
+    let modalEl = document.getElementById('detailSpjModal');
+    let modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modalInstance.show();
 }
 
 function openDetailSpjFromForm(mIdx) {
     document.getElementById('isDirectMode').value = "0"; document.getElementById('activeMonthIndex').value = mIdx;
     document.getElementById('detailSpjTitle').innerText = `Rincian Term - Bulan ${namaBulanPanjang[mIdx]}`;
-    for(let t=0; t<10; t++) document.getElementById(`term_${t}`).value = tempCurrentSpjDetails[mIdx][t] === 0 ? '' : new Intl.NumberFormat('id-ID').format(tempCurrentSpjDetails[mIdx][t]);
-    calculateTermTotal(); new bootstrap.Modal(document.getElementById('detailSpjModal')).show();
+    for(let t=0; t<10; t++) {
+        let termVal = tempCurrentSpjDetails[mIdx][t] || 0;
+        document.getElementById(`term_${t}`).value = termVal === 0 ? '' : new Intl.NumberFormat('id-ID').format(termVal);
+    }
+    calculateTermTotal(); 
+    let modalEl = document.getElementById('detailSpjModal');
+    let modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+    modalInstance.show();
 }
 
 function calculateTermTotal() {
@@ -1123,7 +1148,8 @@ function saveDetailSpj() {
         let rek = prog ? prog.rekeningList.find(r => r.id === rekId) : null;
         
         if (rek) {
-            rek.spjDetails = JSON.parse(JSON.stringify(tempCurrentSpjDetails));
+            if (!rek.spjDetails) rek.spjDetails = Array(12).fill(0).map(() => Array(10).fill(0));
+            rek.spjDetails[mIdx] = [...tempCurrentSpjDetails[mIdx]];
             rek.spj[mIdx] = sum;
             
             let totalSpj = rek.spj.reduce((a, b) => a + b, 0);
@@ -1131,7 +1157,7 @@ function saveDetailSpj() {
                 playDangerSound();
             }
 
-            updateSingleRowUI(progId, rekId); // SURGICAL UPDATE MURNI: HANYA BARIS INI YANG DI-UPDATE, TABEL TIDAK DIRENDER ULANG
+            updateSingleRowUI(progId, rekId); 
             saveToCloud();
             showToast("Pengeluaran Berhasil Disimpan!");
         }
@@ -1142,7 +1168,11 @@ function saveDetailSpj() {
     closeDetailSpj();
 }
 
-function closeDetailSpj() { bootstrap.Modal.getInstance(document.getElementById('detailSpjModal')).hide(); }
+function closeDetailSpj() { 
+    let modalEl = document.getElementById('detailSpjModal');
+    let modalInstance = bootstrap.Modal.getInstance(modalEl);
+    if (modalInstance) modalInstance.hide(); 
+}
 
 function validateSpjColorInModal() {
     const totPagu = parseCurrencyNumber(document.getElementById('formPaguBelanja').value);
