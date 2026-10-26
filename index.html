@@ -873,12 +873,20 @@ function updateSingleRowUI(progId, rekId) {
             cells[cellIdx].innerHTML = `<button class="btn btn-sm btn-outline-info py-0 px-1 me-1" onclick="openEditModal('${prog.id}','${rek.id}')"><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteData('${prog.id}','${rek.id}')"><i class="bi bi-trash"></i></button>`;
         }
     }
+    
+    // UPDATE INSTAN KARTU RINGKASAN DI ATAS
     updateGlobalTotalsQuick();
 }
 
 function updateGlobalTotalsQuick() {
-    let bidangStats = { 'Sekretariat': { pagu: 0, spj: 0 }, 'PEMDES': { pagu: 0, spj: 0 }, 'PMLKD': { pagu: 0, spj: 0 }, 'PUEMD': { pagu: 0, spj: 0 } };
-    let displayPagu = 0; let displaySpj = 0;
+    let bidangStats = { 
+        'Sekretariat': { pagu: 0, spj: 0 }, 
+        'PEMDES': { pagu: 0, spj: 0 }, 
+        'PMLKD': { pagu: 0, spj: 0 }, 
+        'PUEMD': { pagu: 0, spj: 0 } 
+    };
+    let displayPagu = 0; 
+    let displaySpj = 0;
 
     appData.forEach(prog => {
         prog.rekeningList.forEach(rek => {
@@ -893,8 +901,10 @@ function updateGlobalTotalsQuick() {
     });
 
     for (let bName in bidangStats) {
-        let bPagu = bidangStats[bName].pagu; let bSpj = bidangStats[bName].spj;
-        let bSisa = Math.max(0, bPagu - bSpj); let bPct = bPagu > 0 ? (bSpj / bPagu) * 100 : 0;
+        let bPagu = bidangStats[bName].pagu; 
+        let bSpj = bidangStats[bName].spj;
+        let bSisa = Math.max(0, bPagu - bSpj); 
+        let bPct = bPagu > 0 ? (bSpj / bPagu) * 100 : 0;
         
         let elPagu = document.getElementById(`pagu${bName}`);
         let elSpj = document.getElementById(`spj${bName}`);
@@ -918,6 +928,7 @@ function updateGlobalTotalsQuick() {
         elPrg.innerText = `Progres: ${formatPersen(pTot)}`;
         elPrg.style.color = pTot > 100 ? '#ef4444' : '#2563eb';
     }
+    
     updateDonutChart(displaySpj, displayPagu);
 }
 
