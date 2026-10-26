@@ -1005,7 +1005,6 @@ function renderData() {
                         else spjCls = 'spj-merah';
                     }
                     
-                    // RAK HANYA KLIKABLE UNTUK SUPER ADMIN. SPJ KLIKABLE UNTUK SUPER ADMIN & ADMIN BIDANG TERKAIT.
                     let rAttr = canEditRak ? `class="cell-rak cell-rak-clickable" onclick="openDirectRakModal('${prog.id}', '${rek.id}', ${i})"` : `class="cell-rak"`;
                     let sAttr = canEditSpj ? `class="${spjCls} cell-spj-clickable" onclick="openDirectSpjModal('${prog.id}', '${rek.id}', ${i})"` : `class="${spjCls}"`;
                     
@@ -1055,7 +1054,7 @@ function openDirectRakModal(progId, rekId, mIdx) {
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
     if (val !== null) { 
         rek.rak[mIdx] = parseCurrencyNumber(val); 
-        updateSingleRowUI(progId, rekId); // HANYA MEMPERBARUI BARIS TARGET TANPA RENDER ULANG TABEL
+        updateSingleRowUI(progId, rekId); // SURGICAL UPDATE MURNI
         saveToCloud(); 
         showToast("RAK Diperbarui Instan!"); 
     }
@@ -1132,7 +1131,7 @@ function saveDetailSpj() {
                 playDangerSound();
             }
 
-            updateSingleRowUI(progId, rekId); // HANYA MEMPERBARUI BARIS TARGET TANPA RENDER ULANG TABEL
+            updateSingleRowUI(progId, rekId); // SURGICAL UPDATE MURNI: HANYA BARIS INI YANG DI-UPDATE, TABEL TIDAK DIRENDER ULANG
             saveToCloud();
             showToast("Pengeluaran Berhasil Disimpan!");
         }
