@@ -809,7 +809,7 @@ function updatePejabatCard(bidangKey) {
     document.getElementById('pejabatCardContainer').style.background = data.bg;
 }
 
-// PERBAIKAN UTAMA: SURGICAL DOM UPDATE (INSTAN TANPA LAG/RE-RENDER TOTAL)
+// SURGICAL DOM UPDATE MURNI: HANYA MEMPERBARUI BARIS TARGET TANPA MERENDER ULANG TABEL
 function updateSingleRowUI(progId, rekId) {
     let prog = appData.find(p => p.id === progId);
     let rek = prog ? prog.rekeningList.find(r => r.id === rekId) : null;
@@ -834,7 +834,7 @@ function updateSingleRowUI(progId, rekId) {
         let cellIdx = 6;
         let cumSpj = 0;
         let isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
-        let canEdit = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
+        let canEditSpj = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
 
         for (let i = 0; i < 12; i++) {
             let rVal = rek.rak[i] || 0;
@@ -853,7 +853,7 @@ function updateSingleRowUI(progId, rekId) {
                 else if (cumSpj === rek.pagu) spjCls = 'spj-kuning';
                 else spjCls = 'spj-merah';
             }
-            spjCell.className = `${spjCls} ${canEdit ? 'cell-spj-clickable' : ''}`.trim();
+            spjCell.className = `${spjCls} ${canEditSpj ? 'cell-spj-clickable' : ''}`.trim();
             cellIdx++;
         }
     }
@@ -987,8 +987,10 @@ function renderData() {
                 sumP += rek.pagu; sumR += totS; sumS += sisaP; 
                 displayPagu += rek.pagu; displaySpj += totS;
 
-                // VALIDASI TEGAS OTORISASI PERAN
-                let canEdit = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
+                // ATURAN MUTLAK: RAK HANYA BISA DIEDIT SUPER ADMIN. ADMIN BIDANG HANYA BISA EDIT SPJ DI BIDANGNYA.
+                let canEditRak = isSuperAdmin;
+                let canEditSpj = isSuperAdmin || (currentUser && currentUser.role === 'ADMIN' && currentUser.bidang === prog.bidang);
+                
                 let mCells = ''; let cumSpj = 0;
 
                 for (let i = 0; i < 12; i++) {
@@ -1002,8 +1004,11 @@ function renderData() {
                         else if (cumSpj === rek.pagu) spjCls = 'spj-kuning';
                         else spjCls = 'spj-merah';
                     }
-                    let rAttr = canEdit ? `class="cell-rak cell-rak-clickable" onclick="openDirectRakModal('${prog.id}', '${rek.id}', ${i})"` : `class="cell-rak"`;
-                    let sAttr = canEdit ? `class="${spjCls} cell-spj-clickable" onclick="openDirectSpjModal('${prog.id}', '${rek.id}', ${i})"` : `class="${spjCls}"`;
+                    
+                    // RAK HANYA KLIKABLE UNTUK SUPER ADMIN. SPJ KLIKABLE UNTUK SUPER ADMIN & ADMIN BIDANG TERKAIT.
+                    let rAttr = canEditRak ? `class="cell-rak cell-rak-clickable" onclick="openDirectRakModal('${prog.id}', '${rek.id}', ${i})"` : `class="cell-rak"`;
+                    let sAttr = canEditSpj ? `class="${spjCls} cell-spj-clickable" onclick="openDirectSpjModal('${prog.id}', '${rek.id}', ${i})"` : `class="${spjCls}"`;
+                    
                     mCells += `<td ${rAttr}>${formatAngkaTabel(rVal)}</td><td ${sAttr}>${formatAngkaTabel(sVal)}</td>`;
                 }
 
@@ -1039,21 +1044,18 @@ function renderData() {
 }
 
 function openDirectRakModal(progId, rekId, mIdx) {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
+        alert("Akses Ditolak: Hanya Super Admin DPMD yang dapat mengubah Rencana Anggaran Kas (RAK)!");
+        return;
+    }
     let prog = appData.find(p => p.id === progId); 
     let rek = prog?.rekeningList.find(r => r.id === rekId);
     if (!rek) return;
 
-    let isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-    if (!isSuperAdmin && currentUser.bidang !== prog.bidang) {
-        alert("Akses Ditolak: Anda tidak memiliki izin mengedit data bidang lain!");
-        return;
-    }
-
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
     if (val !== null) { 
         rek.rak[mIdx] = parseCurrencyNumber(val); 
-        updateSingleRowUI(progId, rekId); 
+        updateSingleRowUI(progId, rekId); // HANYA MEMPERBARUI BARIS TARGET TANPA RENDER ULANG TABEL
         saveToCloud(); 
         showToast("RAK Diperbarui Instan!"); 
     }
@@ -1067,7 +1069,7 @@ function openDirectSpjModal(progId, rekId, mIdx) {
 
     let isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
     if (!isSuperAdmin && currentUser.bidang !== prog.bidang) {
-        alert("Akses Ditolak: Anda tidak memiliki izin mengedit data bidang lain!");
+        alert("Akses Ditolak: Anda tidak memiliki izin mengedit realisasi bidang lain!");
         return;
     }
 
@@ -1130,7 +1132,7 @@ function saveDetailSpj() {
                 playDangerSound();
             }
 
-            updateSingleRowUI(progId, rekId);
+            updateSingleRowUI(progId, rekId); // HANYA MEMPERBARUI BARIS TARGET TANPA RENDER ULANG TABEL
             saveToCloud();
             showToast("Pengeluaran Berhasil Disimpan!");
         }
