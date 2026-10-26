@@ -21,7 +21,6 @@
             --neu-shadow-flat: 8px 8px 16px var(--neu-dark), -8px -8px 16px var(--neu-light);
             --neu-shadow-sm: 4px 4px 10px var(--neu-dark), -4px -4px 10px var(--neu-light);
             --neu-shadow-inset: inset 4px 4px 8px var(--neu-dark), inset -4px -4px 8px var(--neu-light);
-            --neu-shadow-convex: -4px -4px 10px var(--neu-light), 4px 4px 10px var(--neu-dark);
             --text-main: #2d3748;
             --text-muted: #718096;
             --primary-accent: #3b82f6;
@@ -206,14 +205,6 @@
 
         .custom-toast { position: fixed; top: 20px; right: 20px; z-index: 999999; background: #10b981; color: #ffffff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-weight: 700; display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: transform 0.3s ease-in-out; }
         .custom-toast.show { transform: translateX(0); }
-
-        .real-ant { position: fixed; width: 14px !important; height: 8px !important; pointer-events: none; z-index: 99999; transform-origin: center center; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3)); }
-        .ant-svg { width: 100%; height: 100%; overflow: visible; }
-        .ant-leg { stroke: #111111; stroke-width: 1px; stroke-linecap: round; animation: realisticWalk 0.08s infinite alternate ease-in-out; }
-        .leg-left-1 { animation-delay: 0s; } .leg-right-1 { animation-delay: 0.04s; }
-        .leg-left-2 { animation-delay: 0.02s; } .leg-right-2 { animation-delay: 0.06s; }
-        .leg-left-3 { animation-delay: 0.05s; } .leg-right-3 { animation-delay: 0.01s; }
-        @keyframes realisticWalk { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(-1px) rotate(10deg); } }
     </style>
 </head>
 <body>
@@ -250,9 +241,6 @@
         <i class="bi bi-check-circle-fill fs-5"></i>
         <span id="toastMessage">Data Rekening Belanja Berhasil Disimpan!</span>
     </div>
-
-    <!-- Canvas Efek Daun Realistis 3D Melayang -->
-    <canvas id="leafCanvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999;"></canvas>
 
     <!-- Navbar Utama -->
     <nav class="navbar navbar-expand-lg sticky-top mb-3">
@@ -444,7 +432,6 @@
                     </div>
                     <div class="col-12 col-md-6 text-end">
                         <button id="btnTambahData" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="openAddModal()"><i class="bi bi-plus-circle me-1"></i> Input RAK</button>
-                        <!-- TOMBOL SIMPAN MANUAL KE CLOUD BARU -->
                         <button id="btnSimpanCloud" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="saveToCloudManual()" title="Simpan Permanen ke Cloud Google Sheet"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan ke Cloud</button>
                         <button class="btn btn-success btn-sm fw-bold me-1" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel-fill me-1"></i> Excel</button>
                         <button class="btn btn-sm me-1" onclick="exportJSON()"><i class="bi bi-download me-1"></i> Download JSON</button>
@@ -565,9 +552,7 @@
 <script>
 const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzkxCEQLgTXF-bH4EmyQ0Pkl7I-FzzQjEJrYTF1YVs-tWZe0e2SKH12OAHoRFYvcy4CkQ/exec";
 
-// AUDIO CONTEXT UNTUK TAHAN BLOKIR BROWSER
 let globalAudioCtx = null;
-
 function unlockAudioContext() {
     if (!globalAudioCtx) {
         globalAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -576,35 +561,27 @@ function unlockAudioContext() {
         globalAudioCtx.resume();
     }
 }
-
 document.addEventListener('click', unlockAudioContext, { once: true });
 
 function playDangerSound() {
     unlockAudioContext();
-
-    // 1. Audio Synthesizer Beep Danger
     try {
         if (globalAudioCtx) {
             let osc = globalAudioCtx.createOscillator();
             let gain = globalAudioCtx.createGain();
-            
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(900, globalAudioCtx.currentTime);
             osc.frequency.linearRampToValueAtTime(400, globalAudioCtx.currentTime + 0.3);
             osc.frequency.linearRampToValueAtTime(900, globalAudioCtx.currentTime + 0.6);
-            
             gain.gain.setValueAtTime(0.5, globalAudioCtx.currentTime);
             gain.gain.exponentialRampToValueAtTime(0.01, globalAudioCtx.currentTime + 0.8);
-            
             osc.connect(gain);
             gain.connect(globalAudioCtx.destination);
-            
             osc.start();
             osc.stop(globalAudioCtx.currentTime + 0.8);
         }
     } catch(e) {}
 
-    // 2. MP3 Audio Fallback
     try {
         let snd = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
         snd.volume = 1.0;
@@ -651,19 +628,12 @@ function showToast(msg) {
 document.addEventListener("DOMContentLoaded", async () => {
     updateUserInterface();
     initDonutChart();
-    
-    // AMBIL DATA 100% MURNI DARI CLOUD
     await loadDataFromGoogleSheets();                    
     renderData();                    
-    initRealAnts();
-    initFallingLeavesWithDelay();
     initVisiMisiTicker();
-
-    // BACKGROUND POLLING REALTIME OTOMATIS
     startRealtimeSync();
 });
 
-// FUNGSI BACKGROUND POLLING REALTIME OTOMATIS SETIAP 10 DETIK
 function startRealtimeSync() {
     setInterval(async () => {
         try {
@@ -676,18 +646,14 @@ function startRealtimeSync() {
                 if (Array.isArray(result) && result.length > 0) {
                     let currentLocalStr = JSON.stringify(appData);
                     let incomingStr = JSON.stringify(result);
-                    
-                    if (currentLocalStr !== incomingStr) {
+                    if (currentLocalStr !== incomingStr && !document.body.classList.contains('modal-open')) {
                         appData = result;
-                        renderData();
-                        console.log("Data diperbarui secara realtime dari Cloud.");
+                        updateGlobalTotalsQuick();
                     }
                 }
             }
-        } catch (err) {
-            console.warn("Sinkronisasi latar belakang tertunda (offline).");
-        }
-    }, 10000);
+        } catch (err) {}
+    }, 15000);
 }
 
 function initVisiMisiTicker() {
@@ -703,42 +669,34 @@ function initVisiMisiTicker() {
     ];
 
     let currentIndex = 0;
-
     function startNextItem() {
         if (currentIndex >= items.length) {
             tickerTextEl.innerText = "";
             tickerTextEl.style.transition = 'none';
             tickerTextEl.style.transform = 'translate(100%, -50%)';
-            
             setTimeout(() => {
                 currentIndex = 0;
                 startNextItem();
             }, 15000);
             return;
         }
-
         tickerTextEl.innerText = items[currentIndex];
-
         setTimeout(() => {
             const boxWidth = tickerTextEl.parentElement.clientWidth || 300;
             const textWidth = tickerTextEl.scrollWidth || 500;
             const speed = 55;
             const duration = (boxWidth + textWidth) / speed;
-
             tickerTextEl.style.transition = 'none';
             tickerTextEl.style.transform = `translate(${boxWidth}px, -50%)`;
             void tickerTextEl.offsetWidth;
-            
             tickerTextEl.style.transition = `transform ${duration}s linear`;
             tickerTextEl.style.transform = `translate(-${textWidth}px, -50%)`;
-
             setTimeout(() => {
                 currentIndex++;
                 startNextItem();
             }, duration * 1000);
         }, 50);
     }
-
     startNextItem();
 }
 
@@ -754,74 +712,6 @@ function formatAngkaTabel(val) {
     return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
 }
 
-function initFallingLeavesWithDelay() {
-    const leafCanvas = document.getElementById('leafCanvas');
-    if (!leafCanvas) return;
-    const ctx = leafCanvas.getContext('2d');
-    let width = leafCanvas.width = window.innerWidth;
-    let height = leafCanvas.height = window.innerHeight;
-
-    window.addEventListener('resize', () => {
-        width = leafCanvas.width = window.innerWidth;
-        height = leafCanvas.height = window.innerHeight;
-    });
-
-    const leaves = [];
-    class Leaf {
-        constructor() { this.reset(); }
-        reset() {
-            this.x = Math.random() * width; this.y = -40;
-            this.size = Math.random() * 14 + 12;
-            this.speedY = Math.random() * 1.1 + 0.6;
-            this.speedX = Math.random() * 0.8 - 0.4;
-            this.rotationZ = Math.random() * 360;
-            this.rotSpeedZ = (Math.random() - 0.5) * 1.8;
-            this.flipAngle = Math.random() * Math.PI * 2;
-            this.flipSpeed = Math.random() * 0.04 + 0.02;
-            this.opacity = Math.random() * 0.5 + 0.4;
-            const colors = [{main:'#4caf50',vein:'#2e7d32'},{main:'#81c784',vein:'#388e3c'},{main:'#fbc02d',vein:'#f57f17'},{main:'#fb8c00',vein:'#e65100'},{main:'#d84315',vein:'#bf360c'}];
-            const c = colors[Math.floor(Math.random() * colors.length)];
-            this.color = c.main; this.veinColor = c.vein;
-        }
-        update() {
-            this.y += this.speedY; this.x += Math.sin(this.y / 30) * 1.2 + this.speedX;
-            this.rotationZ += this.rotSpeedZ; this.flipAngle += this.flipSpeed;
-            if (this.y > height + 40) this.reset();
-        }
-        draw() {
-            ctx.save(); ctx.translate(this.x, this.y);
-            ctx.rotate((this.rotationZ * Math.PI) / 180);
-            ctx.scale(1, Math.cos(this.flipAngle));
-            ctx.globalAlpha = this.opacity;
-            const s = this.size;
-            ctx.beginPath(); ctx.moveTo(0, -s); ctx.bezierCurveTo(s*0.75,-s*0.5,s*0.85,s*0.3,0,s); ctx.bezierCurveTo(-s*0.85,s*0.3,-s*0.75,-s*0.5,0,-s); ctx.fillStyle = this.color; ctx.fill();
-            ctx.beginPath(); ctx.moveTo(0, -s*1.05); ctx.lineTo(0, s*1.25); ctx.strokeStyle = this.veinColor; ctx.lineWidth = 1.3; ctx.stroke();
-            ctx.restore();
-        }
-    }
-    for (let i = 0; i < 20; i++) leaves.push(new Leaf());
-
-    let isFallingActive = false;
-    function animateLeaves() {
-        ctx.clearRect(0, 0, width, height);
-        if (isFallingActive) leaves.forEach(l => { l.update(); l.draw(); });
-        requestAnimationFrame(animateLeaves);
-    }
-    animateLeaves();
-
-    setTimeout(() => {
-        isFallingActive = true;
-        setTimeout(() => {
-            isFallingActive = false;
-            setInterval(() => {
-                isFallingActive = true;
-                setTimeout(() => { isFallingActive = false; }, 120000);
-            }, 300000 + 120000);
-        }, 120000);
-    }, 300000);
-}
-
-// PEMUATAN DATA DARI CLOUD
 async function loadDataFromGoogleSheets() {
     try {
         let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime(), {
@@ -830,51 +720,39 @@ async function loadDataFromGoogleSheets() {
         });
         if (!response.ok) throw new Error("Gagal terhubung ke Cloud");
         let result = await response.json();
-        
         if (Array.isArray(result) && result.length > 0) {
             appData = result;
-            console.log("Data berhasil dimuat dari Cloud Google Sheet.");
-        } else {
-            console.log("Cloud kosong atau data belum ada.");
         }
     } catch (error) {
-        console.warn("Koneksi Cloud gagal:", error);
         showToast("PERINGATAN: Gagal memuat data dari Cloud!");
     }
     renderData();
 }
 
-// PENYIMPANAN KE CLOUD
-async function saveToCloud() {
-    try {
-        let response = await fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { 
-                "Content-Type": "text/plain;charset=utf-8" 
-            },
-            body: JSON.stringify(appData)
-        });
-    } catch (error) {
-        console.error("Gagal simpan:", error);
-    }
+function saveToCloud() {
+    setTimeout(async () => {
+        try {
+            await fetch(WEB_APP_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
+                body: JSON.stringify(appData)
+            });
+        } catch (error) {}
+    }, 10);
 }
 
-// FUNGSI UNTUK TOMBOL MANUAL "SIMPAN KE CLOUD"
 async function saveToCloudManual() {
     try {
         showToast("Menyimpan data ke Cloud...");
         await fetch(WEB_APP_URL, {
             method: "POST",
             mode: "no-cors",
-            headers: { 
-                "Content-Type": "text/plain;charset=utf-8" 
-            },
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
             body: JSON.stringify(appData)
         });
         showToast("Data Berhasil Disimpan ke Cloud Google Sheet!");
     } catch (error) {
-        console.error("Gagal simpan manual:", error);
         showToast("Gagal menyimpan ke Cloud!");
     }
 }
@@ -931,61 +809,100 @@ function updatePejabatCard(bidangKey) {
     document.getElementById('pejabatCardContainer').style.background = data.bg;
 }
 
-function initRealAnts() {
-    const ants = []; 
-    const positions = [];
-    
-    for (let i = 0; i < 2; i++) {
-        const ant = document.createElement('div');
-        ant.className = 'real-ant';
-        ant.innerHTML = `<svg class="ant-svg" viewBox="0 0 32 20"><line class="ant-leg leg-left-1" x1="12" y1="10" x2="6" y2="3" /><line class="ant-leg leg-left-2" x1="15" y1="10" x2="11" y2="2" /><line class="ant-leg leg-left-3" x1="18" y1="10" x2="16" y2="2" /><line class="ant-leg leg-right-1" x1="12" y1="10" x2="6" y2="17" /><line class="ant-leg leg-right-2" x1="15" y1="10" x2="11" y2="18" /><line class="ant-leg leg-right-3" x1="18" y1="10" x2="16" y2="18" /><ellipse cx="6" cy="10" rx="4.5" ry="3.5" fill="#111111" /><circle cx="13" cy="10" r="2.2" fill="#222222" /><circle cx="18.5" cy="10" r="3.2" fill="#000000" /></svg>`;
-        document.body.appendChild(ant); 
-        ants.push(ant);
-        positions.push({ x: window.innerWidth / 2, y: window.innerHeight / 2 });
+// PERBAIKAN UTAMA: SURGICAL DOM UPDATE (INSTAN TANPA LAG/RE-RENDER TOTAL)
+function updateSingleRowUI(progId, rekId) {
+    let prog = appData.find(p => p.id === progId);
+    let rek = prog ? prog.rekeningList.find(r => r.id === rekId) : null;
+    if (!rek) return;
+
+    let rowEl = document.getElementById(`row-rek-${rekId}`);
+    if (!rowEl) {
+        renderData(); 
+        return;
     }
-    
-    let mouseX = window.innerWidth / 2; 
-    let mouseY = window.innerHeight / 2;
-    
-    window.addEventListener('mousemove', (e) => { 
-        mouseX = e.clientX; 
-        mouseY = e.clientY; 
+
+    let totS = rek.spj.reduce((a, b) => a + b, 0);
+    let sisaP = rek.pagu - totS;
+    let progPct = rek.pagu > 0 ? (totS / rek.pagu) * 100 : 0;
+
+    let cells = rowEl.cells;
+    if (cells.length >= 6) {
+        cells[3].innerText = formatAngkaTabel(totS);
+        cells[4].innerText = formatAngkaTabel(sisaP);
+        cells[5].innerHTML = `<span class="badge badge-progres-tabel ${sisaP < 0 ? 'bg-danger text-white' : (progPct >= 100 ? 'bg-warning text-dark' : 'bg-success text-white')}">${formatPersen(progPct)}</span>`;
+
+        let cellIdx = 6;
+        let cumSpj = 0;
+        let isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
+        let canEdit = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
+
+        for (let i = 0; i < 12; i++) {
+            let rVal = rek.rak[i] || 0;
+            let sVal = rek.spj[i] || 0;
+            
+            cells[cellIdx].innerText = formatAngkaTabel(rVal);
+            cellIdx++;
+
+            let spjCell = cells[cellIdx];
+            spjCell.innerText = formatAngkaTabel(sVal);
+            
+            let spjCls = '';
+            if (sVal > 0) {
+                cumSpj += sVal;
+                if (cumSpj < rek.pagu) spjCls = 'spj-hijau';
+                else if (cumSpj === rek.pagu) spjCls = 'spj-kuning';
+                else spjCls = 'spj-merah';
+            }
+            spjCell.className = `${spjCls} ${canEdit ? 'cell-spj-clickable' : ''}`.trim();
+            cellIdx++;
+        }
+    }
+    updateGlobalTotalsQuick();
+}
+
+function updateGlobalTotalsQuick() {
+    let bidangStats = { 'Sekretariat': { pagu: 0, spj: 0 }, 'PEMDES': { pagu: 0, spj: 0 }, 'PMLKD': { pagu: 0, spj: 0 }, 'PUEMD': { pagu: 0, spj: 0 } };
+    let displayPagu = 0; let displaySpj = 0;
+
+    appData.forEach(prog => {
+        prog.rekeningList.forEach(rek => {
+            let rekSpj = rek.spj.reduce((a, b) => a + b, 0);
+            if (bidangStats[prog.bidang]) { 
+                bidangStats[prog.bidang].pagu += rek.pagu; 
+                bidangStats[prog.bidang].spj += rekSpj; 
+            }
+            displayPagu += rek.pagu;
+            displaySpj += rekSpj;
+        });
     });
 
-    function crawlAnts() {
-        let curX = mouseX; 
-        let curY = mouseY;
+    for (let bName in bidangStats) {
+        let bPagu = bidangStats[bName].pagu; let bSpj = bidangStats[bName].spj;
+        let bSisa = Math.max(0, bPagu - bSpj); let bPct = bPagu > 0 ? (bSpj / bPagu) * 100 : 0;
         
-        positions.forEach((pos, idx) => {
-            let speed = idx === 0 ? 0.08 : 0.05; 
-            let offsetX = idx === 1 ? 18 : 0;
-            let offsetY = idx === 1 ? 12 : 0;
-            
-            let targetX = curX - offsetX;
-            let targetY = curY - offsetY;
-            
-            let dx = targetX - pos.x;
-            let dy = targetY - pos.y;
-            
-            pos.x += dx * speed; 
-            pos.y += dy * speed;
-            
-            if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
-                let angle = Math.atan2(dy, dx) * (180 / Math.PI);
-                ants[idx].style.transform = `rotate(${angle}deg)`;
-            }
-            
-            ants[idx].style.left = `${pos.x}px`; 
-            ants[idx].style.top = `${pos.y}px`;
-            
-            if (idx === 0) { 
-                curX = pos.x; 
-                curY = pos.y; 
-            }
-        });
-        requestAnimationFrame(crawlAnts);
+        let elPagu = document.getElementById(`pagu${bName}`);
+        let elSpj = document.getElementById(`spj${bName}`);
+        let elSisa = document.getElementById(`sisa${bName}`);
+        let elPct = document.getElementById(`pct${bName}`);
+        let elBar = document.getElementById(`bar${bName}`);
+
+        if (elPagu) elPagu.innerText = formatRupiah(bPagu);
+        if (elSpj) elSpj.innerText = formatRupiah(bSpj);
+        if (elSisa) elSisa.innerText = formatRupiah(bSisa);
+        if (elPct) elPct.innerText = formatPersen(bPct);
+        if (elBar) elBar.style.width = `${Math.min(100, bPct)}%`;
     }
-    crawlAnts();
+
+    let elTotalPagu = document.getElementById('totalPaguDpmd');
+    if (elTotalPagu) elTotalPagu.innerText = formatRupiah(displayPagu);
+
+    let pTot = displayPagu > 0 ? (displaySpj / displayPagu) * 100 : 0;
+    let elPrg = document.getElementById('totalProgresDpmd');
+    if (elPrg) {
+        elPrg.innerText = `Progres: ${formatPersen(pTot)}`;
+        elPrg.style.color = pTot > 100 ? '#ef4444' : '#2563eb';
+    }
+    updateDonutChart(displaySpj, displayPagu);
 }
 
 function renderData() {
@@ -1067,21 +984,17 @@ function renderData() {
                 let sisaP = rek.pagu - totS; 
                 let progPct = rek.pagu > 0 ? (totS/rek.pagu)*100 : 0;
 
-                sumP += rek.pagu; 
-                sumR += totS; 
-                sumS += sisaP; 
-                displayPagu += rek.pagu; 
-                displaySpj += totS;
+                sumP += rek.pagu; sumR += totS; sumS += sisaP; 
+                displayPagu += rek.pagu; displaySpj += totS;
 
-                let canEdit = currentUser && (currentUser.role === 'SUPER_ADMIN' || currentUser.bidang === prog.bidang);
-                let mCells = ''; 
-                let cumSpj = 0;
+                // VALIDASI TEGAS OTORISASI PERAN
+                let canEdit = currentUser && (isSuperAdmin || currentUser.bidang === prog.bidang);
+                let mCells = ''; let cumSpj = 0;
 
                 for (let i = 0; i < 12; i++) {
                     let rVal = rek.rak[i] || 0; 
                     let sVal = rek.spj[i] || 0;
-                    sumRakM[i] += rVal; 
-                    sumSpjM[i] += sVal;
+                    sumRakM[i] += rVal; sumSpjM[i] += sVal;
                     let spjCls = '';
                     if (sVal > 0) {
                         cumSpj += sVal;
@@ -1094,7 +1007,7 @@ function renderData() {
                     mCells += `<td ${rAttr}>${formatAngkaTabel(rVal)}</td><td ${sAttr}>${formatAngkaTabel(sVal)}</td>`;
                 }
 
-                tableHTML += `<tr class="row-rekening">
+                tableHTML += `<tr class="row-rekening" id="row-rek-${rek.id}">
                     <td class="text-start font-monospace ps-2 fw-bold col-kode-rekening">${rek.kodeRekening}</td>
                     <td class="text-start ps-2 col-uraian">${rek.uraian}</td>
                     <td class="fw-bold">${formatAngkaTabel(rek.pagu)}</td>
@@ -1127,22 +1040,54 @@ function renderData() {
 
 function openDirectRakModal(progId, rekId, mIdx) {
     if (!currentUser) return;
-    let prog = appData.find(p => p.id === progId); let rek = prog?.rekeningList.find(r => r.id === rekId);
+    let prog = appData.find(p => p.id === progId); 
+    let rek = prog?.rekeningList.find(r => r.id === rekId);
     if (!rek) return;
+
+    let isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+    if (!isSuperAdmin && currentUser.bidang !== prog.bidang) {
+        alert("Akses Ditolak: Anda tidak memiliki izin mengedit data bidang lain!");
+        return;
+    }
+
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
-    if (val !== null) { rek.rak[mIdx] = parseCurrencyNumber(val); saveToCloud(); renderData(); showToast("RAK Diperbarui!"); }
+    if (val !== null) { 
+        rek.rak[mIdx] = parseCurrencyNumber(val); 
+        updateSingleRowUI(progId, rekId); 
+        saveToCloud(); 
+        showToast("RAK Diperbarui Instan!"); 
+    }
 }
 
 function openDirectSpjModal(progId, rekId, mIdx) {
     if (!currentUser) return;
-    let prog = appData.find(p => p.id === progId); let rek = prog?.rekeningList.find(r => r.id === rekId);
+    let prog = appData.find(p => p.id === progId); 
+    let rek = prog?.rekeningList.find(r => r.id === rekId);
     if (!rek) return;
-    document.getElementById('activeProgId').value = progId; document.getElementById('activeRekId').value = rekId; document.getElementById('activeMonthIndex').value = mIdx; document.getElementById('isDirectMode').value = "1";
+
+    let isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
+    if (!isSuperAdmin && currentUser.bidang !== prog.bidang) {
+        alert("Akses Ditolak: Anda tidak memiliki izin mengedit data bidang lain!");
+        return;
+    }
+
+    document.getElementById('activeProgId').value = progId; 
+    document.getElementById('activeRekId').value = rekId; 
+    document.getElementById('activeMonthIndex').value = mIdx; 
+    document.getElementById('isDirectMode').value = "1";
     document.getElementById('detailSpjTitle').innerText = `Rincian Term (${namaBulanPanjang[mIdx]}) - ${rek.uraian}`;
-    if (!rek.spjDetails) { rek.spjDetails = Array(12).fill(0).map(()=>Array(10).fill(0)); for(let i=0;i<12;i++) if(rek.spj[i]>0) rek.spjDetails[i][0]=rek.spj[i]; }
+    
+    if (!rek.spjDetails) { 
+        rek.spjDetails = Array(12).fill(0).map(() => Array(10).fill(0)); 
+        for(let i = 0; i < 12; i++) if(rek.spj[i] > 0) rek.spjDetails[i][0] = rek.spj[i]; 
+    }
+    
     tempCurrentSpjDetails = JSON.parse(JSON.stringify(rek.spjDetails));
-    for(let t=0; t<10; t++) document.getElementById(`term_${t}`).value = tempCurrentSpjDetails[mIdx][t] === 0 ? '' : new Intl.NumberFormat('id-ID').format(tempCurrentSpjDetails[mIdx][t]);
-    calculateTermTotal(); new bootstrap.Modal(document.getElementById('detailSpjModal')).show();
+    for(let t = 0; t < 10; t++) {
+        document.getElementById(`term_${t}`).value = tempCurrentSpjDetails[mIdx][t] === 0 ? '' : new Intl.NumberFormat('id-ID').format(tempCurrentSpjDetails[mIdx][t]);
+    }
+    calculateTermTotal(); 
+    new bootstrap.Modal(document.getElementById('detailSpjModal')).show();
 }
 
 function openDetailSpjFromForm(mIdx) {
@@ -1159,7 +1104,6 @@ function calculateTermTotal() {
 
 function saveDetailSpj() {
     unlockAudioContext();
-    
     let mIdx = parseInt(document.getElementById('activeMonthIndex').value);
     let isDirect = document.getElementById('isDirectMode').value === "1";
     let sum = 0;
@@ -1186,8 +1130,8 @@ function saveDetailSpj() {
                 playDangerSound();
             }
 
+            updateSingleRowUI(progId, rekId);
             saveToCloud();
-            renderData();
             showToast("Pengeluaran Berhasil Disimpan!");
         }
     } else {
@@ -1201,21 +1145,15 @@ function closeDetailSpj() { bootstrap.Modal.getInstance(document.getElementById(
 
 function validateSpjColorInModal() {
     const totPagu = parseCurrencyNumber(document.getElementById('formPaguBelanja').value);
-    let runSpj = 0; 
-    let exceed = false;
-
+    let runSpj = 0; let exceed = false;
     for (let i = 0; i < 12; i++) {
-        let inp = document.getElementById(`spj_${i}`); 
-        let val = parseCurrencyNumber(inp.value);
+        let inp = document.getElementById(`spj_${i}`); let val = parseCurrencyNumber(inp.value);
         inp.classList.remove('spj-hijau', 'spj-kuning', 'spj-merah');
         if (val > 0) {
             runSpj += val;
             if (runSpj < totPagu) inp.classList.add('spj-hijau');
             else if (runSpj === totPagu) inp.classList.add('spj-kuning');
-            else { 
-                inp.classList.add('spj-merah'); 
-                exceed = true; 
-            }
+            else { inp.classList.add('spj-merah'); exceed = true; }
         }
     }
     if (exceed) playDangerSound();
@@ -1224,10 +1162,8 @@ function validateSpjColorInModal() {
 async function handleAuthAction() {
     if (currentUser) {
         await saveToCloud();
-        currentUser = null; 
-        sessionStorage.removeItem('sipd_user');
-        updateUserInterface(); 
-        renderData();
+        currentUser = null; sessionStorage.removeItem('sipd_user');
+        updateUserInterface(); renderData();
         showToast("Sesi Berakhir. Data Berhasil Disimpan ke Cloud!");
     }
 }
@@ -1305,9 +1241,7 @@ function saveData(e) {
     const progId = document.getElementById('editProgramId').value;
     const rekId = document.getElementById('editRekeningId').value;
 
-    let rakValues = [];
-    let spjValues = [];
-
+    let rakValues = []; let spjValues = [];
     for (let i = 0; i < 12; i++) {
         rakValues.push(parseCurrencyNumber(document.getElementById(`rak_${i}`).value));
         let monthSum = tempCurrentSpjDetails[i].reduce((a, b) => a + b, 0);
@@ -1347,11 +1281,7 @@ function saveData(e) {
         }
         saveToCloud();
         renderData();
-
-        let modalEl = document.getElementById('dataModal');
-        let modalInst = bootstrap.Modal.getInstance(modalEl);
-        if (modalInst) modalInst.hide();
-
+        bootstrap.Modal.getInstance(document.getElementById('dataModal')).hide();
         showToast("Data Rekening Berhasil Diperbarui!");
     } else {
         let existingProg = appData.find(p => p.kodeSubKegiatan === kodeSubVal && p.bidang === bidangVal);
@@ -1372,14 +1302,12 @@ function saveData(e) {
         }
         saveToCloud();
         renderData();
-
         showToast("Rekening Berhasil Ditambahkan!");
 
         document.getElementById('editRekeningId').value = '';
         document.getElementById('formKodeRekening').value = '';
         document.getElementById('formUraianBelanja').value = '';
         document.getElementById('formPaguBelanja').value = '';
-        
         tempCurrentSpjDetails = Array(12).fill(0).map(() => Array(10).fill(0));
         for (let i = 0; i < 12; i++) {
             document.getElementById(`rak_${i}`).value = '';
@@ -1413,21 +1341,15 @@ function exportJSON() {
 }
 
 function importJSON(event) {
-    let file = event.target.files[0]; 
-    if (!file) return;
+    let file = event.target.files[0]; if (!file) return;
     let reader = new FileReader();
     reader.onload = async function(e) {
         try {
             let data = JSON.parse(e.target.result);
             if (Array.isArray(data) && confirm("Pulihkan dan simpan permanen data dari file JSON ini ke Cloud Google Sheets?")) {
-                appData = data; 
-                renderData(); 
-                await saveToCloud(); 
-                showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
+                appData = data; renderData(); await saveToCloud(); showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
             }
-        } catch (err) { 
-            alert("Format file JSON tidak valid!"); 
-        }
+        } catch (err) { alert("Format file JSON tidak valid!"); }
         event.target.value = '';
     };
     reader.readAsText(file);
