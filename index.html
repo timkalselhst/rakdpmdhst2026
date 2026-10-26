@@ -809,7 +809,7 @@ function updatePejabatCard(bidangKey) {
     document.getElementById('pejabatCardContainer').style.background = data.bg;
 }
 
-// SURGICAL DOM UPDATE MURNI: HANYA MEMPERBARUI BARIS TARGET TANPA MERENDER ULANG TABEL
+// SURGICAL DOM UPDATE MURNI: MEMPERBARUI BARIS TARGET DAN KARTU ATAS SECARA INSTAN
 function updateSingleRowUI(progId, rekId) {
     let prog = appData.find(p => p.id === progId);
     let rek = prog ? prog.rekeningList.find(r => r.id === rekId) : null;
@@ -827,8 +827,9 @@ function updateSingleRowUI(progId, rekId) {
 
     let cells = rowEl.cells;
     if (cells.length >= 6) {
-        cells[3].innerText = formatAngkaTabel(totS);
-        cells[4].innerText = formatAngkaTabel(sisaP);
+        cells[2].innerText = formatAngkaTabel(rek.pagu); // Kolom Pagu
+        cells[3].innerText = formatAngkaTabel(totS);       // Kolom Realisasi
+        cells[4].innerText = formatAngkaTabel(sisaP);      // Kolom Sisa Pagu
         cells[5].innerHTML = `<span class="badge badge-progres-tabel ${sisaP < 0 ? 'bg-danger text-white' : (progPct >= 100 ? 'bg-warning text-dark' : 'bg-success text-white')}">${formatPersen(progPct)}</span>`;
 
         let cellIdx = 6;
@@ -874,7 +875,7 @@ function updateSingleRowUI(progId, rekId) {
         }
     }
     
-    // UPDATE INSTAN KARTU RINGKASAN DI ATAS
+    // PERBARUI KARTU ATAS DAN DONUT CHART SECARA INSTAN
     updateGlobalTotalsQuick();
 }
 
@@ -1322,7 +1323,7 @@ function saveData(e) {
             if (rekIndex !== -1) prog.rekeningList[rekIndex] = newRekening;
         }
         saveToCloud();
-        renderData();
+        updateSingleRowUI(progId, newRekening.id);
         bootstrap.Modal.getInstance(document.getElementById('dataModal')).hide();
         showToast("Data Rekening Berhasil Diperbarui!");
     } else {
