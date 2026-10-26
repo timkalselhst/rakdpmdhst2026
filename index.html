@@ -456,12 +456,12 @@
                         </div>
                     </div>
                     <div class="col-12 col-md-6 text-end">
-                        <!-- TOMBOL INPUT RAK HITAM TULISAN PUTIH -->
-                        <button id="btnTambahData" class="btn btn-black btn-sm d-none fw-bold me-1" onclick="openAddModal()"><i class="bi bi-plus-circle me-1"></i> Input RAK</button>
-                        <!-- TOMBOL SIMPAN KE CLOUD -->
+                        <!-- TOMBOL INPUT DATA (DULU INPUT RAK) -->
+                        <button id="btnTambahData" class="btn btn-black btn-sm d-none fw-bold me-1" onclick="openAddModal()"><i class="bi bi-plus-circle me-1"></i> Input Data</button>
+                        <!-- TOMBOL SIMPAN KE CLOUD (MUNCUL UNTUK SEMUA USER YANG LOGIN) -->
                         <button id="btnSimpanCloud" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="saveToCloudManual()" title="Simpan ke Cloud"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan</button>
-                        <!-- TOMBOL REFRESH DATA DARI CLOUD -->
-                        <button id="btnRefreshCloud" class="btn btn-success btn-sm fw-bold me-1" onclick="forceRefreshFromCloud()" title="Tarik Data Terbaru dari Google Sheet"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
+                        <!-- TOMBOL REFRESH DATA DARI CLOUD (MUNCUL UNTUK SEMUA USER YANG LOGIN) -->
+                        <button id="btnRefreshCloud" class="btn btn-success btn-sm d-none fw-bold me-1" onclick="forceRefreshFromCloud()" title="Tarik Data Terbaru dari Google Sheet"><i class="bi bi-arrow-clockwise me-1"></i> Refresh</button>
                         <button class="btn btn-success btn-sm fw-bold me-1" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel-fill me-1"></i> Excel</button>
                         <button class="btn btn-sm me-1" onclick="exportJSON()"><i class="bi bi-download me-1"></i> Download JSON</button>
                         <input type="file" id="importJsonFile" style="display: none;" accept=".json" onchange="importJSON(event)">
@@ -1333,6 +1333,7 @@ function updateUserInterface() {
     const btnRefreshCloud = document.getElementById('btnRefreshCloud');
     const btnImportJson = document.getElementById('btnImportJson');
     const isSuperAdmin = currentUser && currentUser.role === 'SUPER_ADMIN';
+    const isLoggedIn = currentUser !== null;
 
     if (currentUser) {
         if (loginScreen) loginScreen.style.display = 'none';
@@ -1347,8 +1348,8 @@ function updateUserInterface() {
     }
 
     if (btnTambahData) btnTambahData.classList.toggle('d-none', !isSuperAdmin);
-    if (btnSimpanCloud) btnSimpanCloud.classList.toggle('d-none', !isSuperAdmin);
-    if (btnRefreshCloud) btnRefreshCloud.classList.toggle('d-none', !isSuperAdmin);
+    if (btnSimpanCloud) btnSimpanCloud.classList.toggle('d-none', !isLoggedIn);
+    if (btnRefreshCloud) btnRefreshCloud.classList.toggle('d-none', !isLoggedIn);
     if (btnImportJson) btnImportJson.classList.toggle('d-none', !isSuperAdmin);
 }
 
