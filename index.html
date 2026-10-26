@@ -9,7 +9,7 @@
     <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
     <!-- Google Fonts: Plus Jakarta Sans & Poppins -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Chart.js untuk Grafik -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -94,6 +94,7 @@
         .btn-bidang-tab.active.tab-pmlkd { background: #a855f7 !important; color: #ffffff !important; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.2), inset -3px -3px 6px rgba(255,255,255,0.4) !important; }
         .btn-bidang-tab.active.tab-puemd { background: #C7840E !important; color: #ffffff !important; box-shadow: inset 3px 3px 6px rgba(0,0,0,0.2), inset -3px -3px 6px rgba(255,255,255,0.4) !important; }
 
+        /* TICKER VISI MISI DENGAN TEKS HITAM DAN LEBIH BESAR */
         .visimisi-ticker-box {
             background: var(--neu-bg);
             border-radius: 12px;
@@ -116,9 +117,9 @@
             top: 50%;
             transform: translateY(-50%);
             will-change: transform;
-            font-size: 11.5px;
-            font-weight: 600;
-            color: #1e3a8a;
+            font-size: 13.5px !important;
+            font-weight: 800 !important;
+            color: #000000 !important;
             display: inline-block;
         }
 
@@ -185,6 +186,11 @@
         .btn { border-radius: 12px; box-shadow: var(--neu-shadow-flat); font-weight: 700; border: none; transition: all 0.2s ease; background: var(--neu-bg); color: var(--text-main); }
         .btn:hover { transform: translateY(-1px); box-shadow: 10px 10px 20px var(--neu-dark), -10px -10px 20px var(--neu-light); color: var(--text-main); }
         .btn:active { box-shadow: var(--neu-shadow-inset) !important; transform: translateY(0); }
+        
+        /* TOMBOL INPUT RAK BERWARNA HITAM TULISAN PUTIH */
+        .btn-black { background: #000000 !important; color: #ffffff !important; box-shadow: var(--neu-shadow-flat); }
+        .btn-black:hover { background: #222222 !important; color: #ffffff !important; }
+
         .btn-primary { background: #3b82f6 !important; color: #ffffff !important; }
         .btn-warning { background: #f59e0b !important; color: #ffffff !important; }
         .btn-success { background: #10b981 !important; color: #ffffff !important; }
@@ -205,6 +211,14 @@
 
         .custom-toast { position: fixed; top: 20px; right: 20px; z-index: 999999; background: #10b981; color: #ffffff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-weight: 700; display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: transform 0.3s ease-in-out; }
         .custom-toast.show { transform: translateX(0); }
+
+        .real-ant { position: fixed; width: 14px !important; height: 8px !important; pointer-events: none; z-index: 99999; transform-origin: center center; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3)); }
+        .ant-svg { width: 100%; height: 100%; overflow: visible; }
+        .ant-leg { stroke: #111111; stroke-width: 1px; stroke-linecap: round; animation: realisticWalk 0.08s infinite alternate ease-in-out; }
+        .leg-left-1 { animation-delay: 0s; } .leg-right-1 { animation-delay: 0.04s; }
+        .leg-left-2 { animation-delay: 0.02s; } .leg-right-2 { animation-delay: 0.06s; }
+        .leg-left-3 { animation-delay: 0.05s; } .leg-right-3 { animation-delay: 0.01s; }
+        @keyframes realisticWalk { 0% { transform: translateY(0px) rotate(0deg); } 100% { transform: translateY(-1px) rotate(10deg); } }
     </style>
 </head>
 <body>
@@ -239,8 +253,11 @@
     <!-- Toast Notifikasi Tersimpan -->
     <div id="saveToast" class="custom-toast">
         <i class="bi bi-check-circle-fill fs-5"></i>
-        <span id="toastMessage">Data Rekening Belanja Berhasil Disimpan!</span>
+        <span id="toastMessage">Data Berhasil Disimpan!</span>
     </div>
+
+    <!-- Canvas Efek Daun Realistis 3D Melayang -->
+    <canvas id="leafCanvas" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999;"></canvas>
 
     <!-- Navbar Utama -->
     <nav class="navbar navbar-expand-lg sticky-top mb-3">
@@ -271,7 +288,7 @@
                     <button class="btn-bidang-tab tab-pmlkd" onclick="setFilterBidang('PMLKD', this)"><i class="bi bi-briefcase-fill me-1"></i> PMLKD</button>
                     <button class="btn-bidang-tab tab-puemd" onclick="setFilterBidang('PUEMD', this)"><i class="bi bi-award-fill me-1"></i> PUEMD</button>
                     
-                    <!-- KOTAK VISI MISI BERJALAN -->
+                    <!-- KOTAK VISI MISI BERJALAN (DENGAN TEKS HITAM DAN BESAR) -->
                     <div class="visimisi-ticker-box">
                         <div id="visimisiTickerText" class="visimisi-ticker-content">Memuat Visi & Misi Kabupaten Hulu Sungai Tengah...</div>
                     </div>
@@ -431,8 +448,10 @@
                         </div>
                     </div>
                     <div class="col-12 col-md-6 text-end">
-                        <button id="btnTambahData" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="openAddModal()"><i class="bi bi-plus-circle me-1"></i> Input RAK</button>
-                        <button id="btnSimpanCloud" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="saveToCloudManual()" title="Simpan Permanen ke Cloud Google Sheet"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan ke Cloud</button>
+                        <!-- TOMBOL INPUT RAK HITAM TULISAN PUTIH -->
+                        <button id="btnTambahData" class="btn btn-black btn-sm d-none fw-bold me-1" onclick="openAddModal()"><i class="bi bi-plus-circle me-1"></i> Input RAK</button>
+                        <!-- TOMBOL SIMPAN KE CLOUD -->
+                        <button id="btnSimpanCloud" class="btn btn-primary btn-sm d-none fw-bold me-1" onclick="saveToCloudManual()" title="Simpan Permanen ke Cloud Google Sheet"><i class="bi bi-cloud-arrow-up-fill me-1"></i> Simpan</button>
                         <button class="btn btn-success btn-sm fw-bold me-1" onclick="exportToExcel()"><i class="bi bi-file-earmark-excel-fill me-1"></i> Excel</button>
                         <button class="btn btn-sm me-1" onclick="exportJSON()"><i class="bi bi-download me-1"></i> Download JSON</button>
                         <input type="file" id="importJsonFile" style="display: none;" accept=".json" onchange="importJSON(event)">
@@ -550,8 +569,9 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwi5o24EJPmHYCFsLb5hsbWf038c0rOsGJ7Hv0tL2g--t_kvxR91RkDqMC75HKKCWxcGA/exec";
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxT9MGGotLfcIgGQ--DE4z0ng-uHS0YMirEWf0WHeJipY3v6blMBGFNa33JhcMwhA5WQg/exec";
 
+// AUDIO CONTEXT
 let globalAudioCtx = null;
 function unlockAudioContext() {
     if (!globalAudioCtx) {
@@ -628,34 +648,63 @@ function showToast(msg) {
 document.addEventListener("DOMContentLoaded", async () => {
     updateUserInterface();
     initDonutChart();
+    
+    // TARIK DATA FRESH DARI GOOGLE SHEETS LALU SIMPAN KE LOCALSTORAGE
     await loadDataFromGoogleSheets();                    
     renderData();                    
+    initSingleRealAnt(); // 1 EKOR SEMUT
+    initFallingLeavesWithDelay();
     initVisiMisiTicker();
-    startRealtimeSync();
 });
 
-function startRealtimeSync() {
-    setInterval(async () => {
-        try {
-            let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime(), {
-                method: "GET",
-                cache: "no-store"
-            });
-            if (response.ok) {
-                let result = await response.json();
-                if (Array.isArray(result) && result.length > 0) {
-                    let currentLocalStr = JSON.stringify(appData);
-                    let incomingStr = JSON.stringify(result);
-                    if (currentLocalStr !== incomingStr && !document.body.classList.contains('modal-open')) {
-                        appData = result;
-                        updateGlobalTotalsQuick();
-                    }
-                }
-            }
-        } catch (err) {}
-    }, 15000);
+// MEMUAT DATA LENGKAP DARI CLOUD PADA LOAD AWAL
+async function loadDataFromGoogleSheets() {
+    try {
+        let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime(), {
+            method: "GET",
+            cache: "no-store"
+        });
+        if (!response.ok) throw new Error("Gagal terhubung ke Cloud");
+        let result = await response.json();
+        
+        if (Array.isArray(result) && result.length > 0) {
+            appData = result;
+            localStorage.setItem('sipd_rak_local_data', JSON.stringify(appData));
+        } else {
+            let localCache = localStorage.getItem('sipd_rak_local_data');
+            if (localCache) appData = JSON.parse(localCache);
+        }
+    } catch (error) {
+        let localCache = localStorage.getItem('sipd_rak_local_data');
+        if (localCache) appData = JSON.parse(localCache);
+        showToast("Memuat Data Lokal (Offline Mode)");
+    }
 }
 
+// SIMPAN LOKAL CEPAT
+function saveToLocal() {
+    localStorage.setItem('sipd_rak_local_data', JSON.stringify(appData));
+}
+
+// TOMBOL "SIMPAN" DITEKAN: DIKIRIM KE CLOUD GOOGLE SHEET
+async function saveToCloudManual() {
+    try {
+        showToast("Menyimpan & Menyinkronkan ke Cloud...");
+        saveToLocal();
+
+        await fetch(WEB_APP_URL, {
+            method: "POST",
+            mode: "no-cors",
+            headers: { "Content-Type": "text/plain;charset=utf-8" },
+            body: JSON.stringify(appData)
+        });
+        showToast("Data Berhasil Disimpan & Tersinkronisasi!");
+    } catch (error) {
+        showToast("Gagal menyinkronkan ke Cloud!");
+    }
+}
+
+// TICKER VISI MISI TEKS HITAM LEBIH BESAR
 function initVisiMisiTicker() {
     const tickerTextEl = document.getElementById('visimisiTickerText');
     if (!tickerTextEl) return;
@@ -680,17 +729,21 @@ function initVisiMisiTicker() {
             }, 15000);
             return;
         }
+
         tickerTextEl.innerText = items[currentIndex];
         setTimeout(() => {
             const boxWidth = tickerTextEl.parentElement.clientWidth || 300;
             const textWidth = tickerTextEl.scrollWidth || 500;
             const speed = 55;
             const duration = (boxWidth + textWidth) / speed;
+
             tickerTextEl.style.transition = 'none';
             tickerTextEl.style.transform = `translate(${boxWidth}px, -50%)`;
             void tickerTextEl.offsetWidth;
+            
             tickerTextEl.style.transition = `transform ${duration}s linear`;
             tickerTextEl.style.transform = `translate(-${textWidth}px, -50%)`;
+
             setTimeout(() => {
                 currentIndex++;
                 startNextItem();
@@ -712,49 +765,107 @@ function formatAngkaTabel(val) {
     return new Intl.NumberFormat('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(val);
 }
 
-async function loadDataFromGoogleSheets() {
-    try {
-        let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime(), {
-            method: "GET",
-            cache: "no-store"
-        });
-        if (!response.ok) throw new Error("Gagal terhubung ke Cloud");
-        let result = await response.json();
-        if (Array.isArray(result) && result.length > 0) {
-            appData = result;
+function initFallingLeavesWithDelay() {
+    const leafCanvas = document.getElementById('leafCanvas');
+    if (!leafCanvas) return;
+    const ctx = leafCanvas.getContext('2d');
+    let width = leafCanvas.width = window.innerWidth;
+    let height = leafCanvas.height = window.innerHeight;
+
+    window.addEventListener('resize', () => {
+        width = leafCanvas.width = window.innerWidth;
+        height = leafCanvas.height = window.innerHeight;
+    });
+
+    const leaves = [];
+    class Leaf {
+        constructor() { this.reset(); }
+        reset() {
+            this.x = Math.random() * width; this.y = -40;
+            this.size = Math.random() * 14 + 12;
+            this.speedY = Math.random() * 1.1 + 0.6;
+            this.speedX = Math.random() * 0.8 - 0.4;
+            this.rotationZ = Math.random() * 360;
+            this.rotSpeedZ = (Math.random() - 0.5) * 1.8;
+            this.flipAngle = Math.random() * Math.PI * 2;
+            this.flipSpeed = Math.random() * 0.04 + 0.02;
+            this.opacity = Math.random() * 0.5 + 0.4;
+            const colors = [{main:'#4caf50',vein:'#2e7d32'},{main:'#81c784',vein:'#388e3c'},{main:'#fbc02d',vein:'#f57f17'},{main:'#fb8c00',vein:'#e65100'},{main:'#d84315',vein:'#bf360c'}];
+            const c = colors[Math.floor(Math.random() * colors.length)];
+            this.color = c.main; this.veinColor = c.vein;
         }
-    } catch (error) {
-        showToast("PERINGATAN: Gagal memuat data dari Cloud!");
+        update() {
+            this.y += this.speedY; this.x += Math.sin(this.y / 30) * 1.2 + this.speedX;
+            this.rotationZ += this.rotSpeedZ; this.flipAngle += this.flipSpeed;
+            if (this.y > height + 40) this.reset();
+        }
+        draw() {
+            ctx.save(); ctx.translate(this.x, this.y);
+            ctx.rotate((this.rotationZ * Math.PI) / 180);
+            ctx.scale(1, Math.cos(this.flipAngle));
+            ctx.globalAlpha = this.opacity;
+            const s = this.size;
+            ctx.beginPath(); ctx.moveTo(0, -s); ctx.bezierCurveTo(s*0.75,-s*0.5,s*0.85,s*0.3,0,s); ctx.bezierCurveTo(-s*0.85,s*0.3,-s*0.75,-s*0.5,0,-s); ctx.fillStyle = this.color; ctx.fill();
+            ctx.beginPath(); ctx.moveTo(0, -s*1.05); ctx.lineTo(0, s*1.25); ctx.strokeStyle = this.veinColor; ctx.lineWidth = 1.3; ctx.stroke();
+            ctx.restore();
+        }
     }
-    renderData();
+    for (let i = 0; i < 20; i++) leaves.push(new Leaf());
+
+    let isFallingActive = false;
+    function animateLeaves() {
+        ctx.clearRect(0, 0, width, height);
+        if (isFallingActive) leaves.forEach(l => { l.update(); l.draw(); });
+        requestAnimationFrame(animateLeaves);
+    }
+    animateLeaves();
+
+    setTimeout(() => {
+        isFallingActive = true;
+        setTimeout(() => {
+            isFallingActive = false;
+            setInterval(() => {
+                isFallingActive = true;
+                setTimeout(() => { isFallingActive = false; }, 120000);
+            }, 300000 + 120000);
+        }, 120000);
+    }, 300000);
 }
 
-function saveToCloud() {
-    setTimeout(async () => {
-        try {
-            await fetch(WEB_APP_URL, {
-                method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify(appData)
-            });
-        } catch (error) {}
-    }, 10);
-}
+// 1 EKOR SEMUT REALISTIS
+function initSingleRealAnt() {
+    const ant = document.createElement('div');
+    ant.className = 'real-ant';
+    ant.innerHTML = `<svg class="ant-svg" viewBox="0 0 32 20"><line class="ant-leg leg-left-1" x1="12" y1="10" x2="6" y2="3" /><line class="ant-leg leg-left-2" x1="15" y1="10" x2="11" y2="2" /><line class="ant-leg leg-left-3" x1="18" y1="10" x2="16" y2="2" /><line class="ant-leg leg-right-1" x1="12" y1="10" x2="6" y2="17" /><line class="ant-leg leg-right-2" x1="15" y1="10" x2="11" y2="18" /><line class="ant-leg leg-right-3" x1="18" y1="10" x2="16" y2="18" /><ellipse cx="6" cy="10" rx="4.5" ry="3.5" fill="#111111" /><circle cx="13" cy="10" r="2.2" fill="#222222" /><circle cx="18.5" cy="10" r="3.2" fill="#000000" /></svg>`;
+    document.body.appendChild(ant); 
+    
+    let pos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+    let mouseX = window.innerWidth / 2; 
+    let mouseY = window.innerHeight / 2;
+    
+    window.addEventListener('mousemove', (e) => { 
+        mouseX = e.clientX; 
+        mouseY = e.clientY; 
+    });
 
-async function saveToCloudManual() {
-    try {
-        showToast("Menyimpan data ke Cloud...");
-        await fetch(WEB_APP_URL, {
-            method: "POST",
-            mode: "no-cors",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(appData)
-        });
-        showToast("Data Berhasil Disimpan ke Cloud Google Sheet!");
-    } catch (error) {
-        showToast("Gagal menyimpan ke Cloud!");
+    function crawlAnt() {
+        let speed = 0.08;
+        let dx = mouseX - pos.x;
+        let dy = mouseY - pos.y;
+        
+        pos.x += dx * speed; 
+        pos.y += dy * speed;
+        
+        if (Math.abs(dx) > 0.1 || Math.abs(dy) > 0.1) {
+            let angle = Math.atan2(dy, dx) * (180 / Math.PI);
+            ant.style.transform = `rotate(${angle}deg)`;
+        }
+        
+        ant.style.left = `${pos.x}px`; 
+        ant.style.top = `${pos.y}px`;
+        requestAnimationFrame(crawlAnt);
     }
+    crawlAnt();
 }
 
 function formatRupiah(val) {
@@ -809,7 +920,7 @@ function updatePejabatCard(bidangKey) {
     document.getElementById('pejabatCardContainer').style.background = data.bg;
 }
 
-// SURGICAL DOM UPDATE MURNI: MEMPERBARUI BARIS TARGET DAN KARTU ATAS SECARA INSTAN
+// SURGICAL DOM UPDATE BERDASARKAN BARIS REKENING TARGET
 function updateSingleRowUI(progId, rekId) {
     let prog = appData.find(p => p.id === progId);
     let rek = prog ? prog.rekeningList.find(r => r.id === rekId) : null;
@@ -827,9 +938,9 @@ function updateSingleRowUI(progId, rekId) {
 
     let cells = rowEl.cells;
     if (cells.length >= 6) {
-        cells[2].innerText = formatAngkaTabel(rek.pagu); // Kolom Pagu
-        cells[3].innerText = formatAngkaTabel(totS);       // Kolom Realisasi
-        cells[4].innerText = formatAngkaTabel(sisaP);      // Kolom Sisa Pagu
+        cells[2].innerText = formatAngkaTabel(rek.pagu);
+        cells[3].innerText = formatAngkaTabel(totS);
+        cells[4].innerText = formatAngkaTabel(sisaP);
         cells[5].innerHTML = `<span class="badge badge-progres-tabel ${sisaP < 0 ? 'bg-danger text-white' : (progPct >= 100 ? 'bg-warning text-dark' : 'bg-success text-white')}">${formatPersen(progPct)}</span>`;
 
         let cellIdx = 6;
@@ -874,20 +985,12 @@ function updateSingleRowUI(progId, rekId) {
             cells[cellIdx].innerHTML = `<button class="btn btn-sm btn-outline-info py-0 px-1 me-1" onclick="openEditModal('${prog.id}','${rek.id}')"><i class="bi bi-pencil-square"></i></button><button class="btn btn-sm btn-outline-danger py-0 px-1" onclick="deleteData('${prog.id}','${rek.id}')"><i class="bi bi-trash"></i></button>`;
         }
     }
-    
-    // PERBARUI KARTU ATAS DAN DONUT CHART SECARA INSTAN
     updateGlobalTotalsQuick();
 }
 
 function updateGlobalTotalsQuick() {
-    let bidangStats = { 
-        'Sekretariat': { pagu: 0, spj: 0 }, 
-        'PEMDES': { pagu: 0, spj: 0 }, 
-        'PMLKD': { pagu: 0, spj: 0 }, 
-        'PUEMD': { pagu: 0, spj: 0 } 
-    };
-    let displayPagu = 0; 
-    let displaySpj = 0;
+    let bidangStats = { 'Sekretariat': { pagu: 0, spj: 0 }, 'PEMDES': { pagu: 0, spj: 0 }, 'PMLKD': { pagu: 0, spj: 0 }, 'PUEMD': { pagu: 0, spj: 0 } };
+    let displayPagu = 0; let displaySpj = 0;
 
     appData.forEach(prog => {
         prog.rekeningList.forEach(rek => {
@@ -902,10 +1005,8 @@ function updateGlobalTotalsQuick() {
     });
 
     for (let bName in bidangStats) {
-        let bPagu = bidangStats[bName].pagu; 
-        let bSpj = bidangStats[bName].spj;
-        let bSisa = Math.max(0, bPagu - bSpj); 
-        let bPct = bPagu > 0 ? (bSpj / bPagu) * 100 : 0;
+        let bPagu = bidangStats[bName].pagu; let bSpj = bidangStats[bName].spj;
+        let bSisa = Math.max(0, bPagu - bSpj); let bPct = bPagu > 0 ? (bSpj / bPagu) * 100 : 0;
         
         let elPagu = document.getElementById(`pagu${bName}`);
         let elSpj = document.getElementById(`spj${bName}`);
@@ -929,7 +1030,6 @@ function updateGlobalTotalsQuick() {
         elPrg.innerText = `Progres: ${formatPersen(pTot)}`;
         elPrg.style.color = pTot > 100 ? '#ef4444' : '#2563eb';
     }
-    
     updateDonutChart(displaySpj, displayPagu);
 }
 
@@ -1012,18 +1112,21 @@ function renderData() {
                 let sisaP = rek.pagu - totS; 
                 let progPct = rek.pagu > 0 ? (totS/rek.pagu)*100 : 0;
 
-                sumP += rek.pagu; sumR += totS; sumS += sisaP; 
-                displayPagu += rek.pagu; displaySpj += totS;
+                sumP += rek.pagu; 
+                sumR += totS; 
+                sumS += sisaP; 
+                displayPagu += rek.pagu; 
+                displaySpj += totS;
 
-                let canEditRak = isSuperAdmin;
-                let canEditSpj = isSuperAdmin || (currentUser && currentUser.role === 'ADMIN' && currentUser.bidang === prog.bidang);
-                
-                let mCells = ''; let cumSpj = 0;
+                let canEdit = currentUser && (currentUser.role === 'SUPER_ADMIN' || currentUser.bidang === prog.bidang);
+                let mCells = ''; 
+                let cumSpj = 0;
 
                 for (let i = 0; i < 12; i++) {
                     let rVal = rek.rak[i] || 0; 
                     let sVal = rek.spj[i] || 0;
-                    sumRakM[i] += rVal; sumSpjM[i] += sVal;
+                    sumRakM[i] += rVal; 
+                    sumSpjM[i] += sVal;
                     let spjCls = '';
                     if (sVal > 0) {
                         cumSpj += sVal;
@@ -1031,10 +1134,8 @@ function renderData() {
                         else if (cumSpj === rek.pagu) spjCls = 'spj-kuning';
                         else spjCls = 'spj-merah';
                     }
-                    
-                    let rAttr = canEditRak ? `class="cell-rak cell-rak-clickable" onclick="openDirectRakModal('${prog.id}', '${rek.id}', ${i})"` : `class="cell-rak"`;
-                    let sAttr = canEditSpj ? `class="${spjCls} cell-spj-clickable" onclick="openDirectSpjModal('${prog.id}', '${rek.id}', ${i})"` : `class="${spjCls}"`;
-                    
+                    let rAttr = canEdit ? `class="cell-rak cell-rak-clickable" onclick="openDirectRakModal('${prog.id}', '${rek.id}', ${i})"` : `class="cell-rak"`;
+                    let sAttr = canEdit ? `class="${spjCls} cell-spj-clickable" onclick="openDirectSpjModal('${prog.id}', '${rek.id}', ${i})"` : `class="${spjCls}"`;
                     mCells += `<td ${rAttr}>${formatAngkaTabel(rVal)}</td><td ${sAttr}>${formatAngkaTabel(sVal)}</td>`;
                 }
 
@@ -1070,69 +1171,35 @@ function renderData() {
 }
 
 function openDirectRakModal(progId, rekId, mIdx) {
-    if (!currentUser || currentUser.role !== 'SUPER_ADMIN') {
-        alert("Akses Ditolak: Hanya Super Admin DPMD yang dapat mengubah Rencana Anggaran Kas (RAK)!");
-        return;
-    }
-    let prog = appData.find(p => p.id === progId); 
-    let rek = prog?.rekeningList.find(r => r.id === rekId);
+    if (!currentUser) return;
+    let prog = appData.find(p => p.id === progId); let rek = prog?.rekeningList.find(r => r.id === rekId);
     if (!rek) return;
-
     let val = prompt(`Ubah Plafon RAK Bulan ${namaBulanPanjang[mIdx]}\nUraian: ${rek.uraian}`, rek.rak[mIdx] || 0);
     if (val !== null) { 
         rek.rak[mIdx] = parseCurrencyNumber(val); 
-        updateSingleRowUI(progId, rekId); 
-        saveToCloud(); 
-        showToast("RAK Diperbarui Instan!"); 
+        updateSingleRowUI(progId, rekId);
+        saveToLocal(); 
+        showToast("RAK Diperbarui (Lokal)!"); 
     }
 }
 
 function openDirectSpjModal(progId, rekId, mIdx) {
     if (!currentUser) return;
-    let prog = appData.find(p => p.id === progId); 
-    let rek = prog?.rekeningList.find(r => r.id === rekId);
+    let prog = appData.find(p => p.id === progId); let rek = prog?.rekeningList.find(r => r.id === rekId);
     if (!rek) return;
-
-    let isSuperAdmin = currentUser.role === 'SUPER_ADMIN';
-    if (!isSuperAdmin && currentUser.bidang !== prog.bidang) {
-        alert("Akses Ditolak: Anda tidak memiliki izin mengedit realisasi bidang lain!");
-        return;
-    }
-
-    document.getElementById('activeProgId').value = progId; 
-    document.getElementById('activeRekId').value = rekId; 
-    document.getElementById('activeMonthIndex').value = mIdx; 
-    document.getElementById('isDirectMode').value = "1";
+    document.getElementById('activeProgId').value = progId; document.getElementById('activeRekId').value = rekId; document.getElementById('activeMonthIndex').value = mIdx; document.getElementById('isDirectMode').value = "1";
     document.getElementById('detailSpjTitle').innerText = `Rincian Term (${namaBulanPanjang[mIdx]}) - ${rek.uraian}`;
-    
-    if (!rek.spjDetails || !Array.isArray(rek.spjDetails) || rek.spjDetails.length !== 12) { 
-        rek.spjDetails = Array(12).fill(0).map(() => Array(10).fill(0)); 
-        for(let i = 0; i < 12; i++) if(rek.spj[i] > 0) rek.spjDetails[i][0] = rek.spj[i]; 
-    }
-    
+    if (!rek.spjDetails) { rek.spjDetails = Array(12).fill(0).map(()=>Array(10).fill(0)); for(let i=0;i<12;i++) if(rek.spj[i]>0) rek.spjDetails[i][0]=rek.spj[i]; }
     tempCurrentSpjDetails = JSON.parse(JSON.stringify(rek.spjDetails));
-    for(let t = 0; t < 10; t++) {
-        let termVal = tempCurrentSpjDetails[mIdx][t] || 0;
-        document.getElementById(`term_${t}`).value = termVal === 0 ? '' : new Intl.NumberFormat('id-ID').format(termVal);
-    }
-    calculateTermTotal(); 
-    
-    let modalEl = document.getElementById('detailSpjModal');
-    let modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-    modalInstance.show();
+    for(let t=0; t<10; t++) document.getElementById(`term_${t}`).value = tempCurrentSpjDetails[mIdx][t] === 0 ? '' : new Intl.NumberFormat('id-ID').format(tempCurrentSpjDetails[mIdx][t]);
+    calculateTermTotal(); new bootstrap.Modal(document.getElementById('detailSpjModal')).show();
 }
 
 function openDetailSpjFromForm(mIdx) {
     document.getElementById('isDirectMode').value = "0"; document.getElementById('activeMonthIndex').value = mIdx;
     document.getElementById('detailSpjTitle').innerText = `Rincian Term - Bulan ${namaBulanPanjang[mIdx]}`;
-    for(let t=0; t<10; t++) {
-        let termVal = tempCurrentSpjDetails[mIdx][t] || 0;
-        document.getElementById(`term_${t}`).value = termVal === 0 ? '' : new Intl.NumberFormat('id-ID').format(termVal);
-    }
-    calculateTermTotal(); 
-    let modalEl = document.getElementById('detailSpjModal');
-    let modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-    modalInstance.show();
+    for(let t=0; t<10; t++) document.getElementById(`term_${t}`).value = tempCurrentSpjDetails[mIdx][t] === 0 ? '' : new Intl.NumberFormat('id-ID').format(tempCurrentSpjDetails[mIdx][t]);
+    calculateTermTotal(); new bootstrap.Modal(document.getElementById('detailSpjModal')).show();
 }
 
 function calculateTermTotal() {
@@ -1142,6 +1209,7 @@ function calculateTermTotal() {
 
 function saveDetailSpj() {
     unlockAudioContext();
+    
     let mIdx = parseInt(document.getElementById('activeMonthIndex').value);
     let isDirect = document.getElementById('isDirectMode').value === "1";
     let sum = 0;
@@ -1160,8 +1228,7 @@ function saveDetailSpj() {
         let rek = prog ? prog.rekeningList.find(r => r.id === rekId) : null;
         
         if (rek) {
-            if (!rek.spjDetails) rek.spjDetails = Array(12).fill(0).map(() => Array(10).fill(0));
-            rek.spjDetails[mIdx] = [...tempCurrentSpjDetails[mIdx]];
+            rek.spjDetails = JSON.parse(JSON.stringify(tempCurrentSpjDetails));
             rek.spj[mIdx] = sum;
             
             let totalSpj = rek.spj.reduce((a, b) => a + b, 0);
@@ -1169,9 +1236,9 @@ function saveDetailSpj() {
                 playDangerSound();
             }
 
-            updateSingleRowUI(progId, rekId); 
-            saveToCloud();
-            showToast("Pengeluaran Berhasil Disimpan!");
+            updateSingleRowUI(progId, rekId);
+            saveToLocal();
+            showToast("Pengeluaran Disimpan (Lokal)!");
         }
     } else {
         document.getElementById(`spj_${mIdx}`).value = sum === 0 ? '' : formatRupiah(sum);
@@ -1180,23 +1247,25 @@ function saveDetailSpj() {
     closeDetailSpj();
 }
 
-function closeDetailSpj() { 
-    let modalEl = document.getElementById('detailSpjModal');
-    let modalInstance = bootstrap.Modal.getInstance(modalEl);
-    if (modalInstance) modalInstance.hide(); 
-}
+function closeDetailSpj() { bootstrap.Modal.getInstance(document.getElementById('detailSpjModal')).hide(); }
 
 function validateSpjColorInModal() {
     const totPagu = parseCurrencyNumber(document.getElementById('formPaguBelanja').value);
-    let runSpj = 0; let exceed = false;
+    let runSpj = 0; 
+    let exceed = false;
+
     for (let i = 0; i < 12; i++) {
-        let inp = document.getElementById(`spj_${i}`); let val = parseCurrencyNumber(inp.value);
+        let inp = document.getElementById(`spj_${i}`); 
+        let val = parseCurrencyNumber(inp.value);
         inp.classList.remove('spj-hijau', 'spj-kuning', 'spj-merah');
         if (val > 0) {
             runSpj += val;
             if (runSpj < totPagu) inp.classList.add('spj-hijau');
             else if (runSpj === totPagu) inp.classList.add('spj-kuning');
-            else { inp.classList.add('spj-merah'); exceed = true; }
+            else { 
+                inp.classList.add('spj-merah'); 
+                exceed = true; 
+            }
         }
     }
     if (exceed) playDangerSound();
@@ -1204,10 +1273,12 @@ function validateSpjColorInModal() {
 
 async function handleAuthAction() {
     if (currentUser) {
-        await saveToCloud();
-        currentUser = null; sessionStorage.removeItem('sipd_user');
-        updateUserInterface(); renderData();
-        showToast("Sesi Berakhir. Data Berhasil Disimpan ke Cloud!");
+        saveToLocal();
+        currentUser = null; 
+        sessionStorage.removeItem('sipd_user');
+        updateUserInterface(); 
+        renderData();
+        showToast("Sesi Berakhir. Data Aman di Lokal!");
     }
 }
 
@@ -1284,7 +1355,9 @@ function saveData(e) {
     const progId = document.getElementById('editProgramId').value;
     const rekId = document.getElementById('editRekeningId').value;
 
-    let rakValues = []; let spjValues = [];
+    let rakValues = [];
+    let spjValues = [];
+
     for (let i = 0; i < 12; i++) {
         rakValues.push(parseCurrencyNumber(document.getElementById(`rak_${i}`).value));
         let monthSum = tempCurrentSpjDetails[i].reduce((a, b) => a + b, 0);
@@ -1322,9 +1395,13 @@ function saveData(e) {
             const rekIndex = prog.rekeningList.findIndex(r => r.id === rekId);
             if (rekIndex !== -1) prog.rekeningList[rekIndex] = newRekening;
         }
-        saveToCloud();
+        saveToLocal();
         updateSingleRowUI(progId, newRekening.id);
-        bootstrap.Modal.getInstance(document.getElementById('dataModal')).hide();
+
+        let modalEl = document.getElementById('dataModal');
+        let modalInst = bootstrap.Modal.getInstance(modalEl);
+        if (modalInst) modalInst.hide();
+
         showToast("Data Rekening Berhasil Diperbarui!");
     } else {
         let existingProg = appData.find(p => p.kodeSubKegiatan === kodeSubVal && p.bidang === bidangVal);
@@ -1343,14 +1420,16 @@ function saveData(e) {
                 rekeningList: [newRekening]
             });
         }
-        saveToCloud();
+        saveToLocal();
         renderData();
+
         showToast("Rekening Berhasil Ditambahkan!");
 
         document.getElementById('editRekeningId').value = '';
         document.getElementById('formKodeRekening').value = '';
         document.getElementById('formUraianBelanja').value = '';
         document.getElementById('formPaguBelanja').value = '';
+        
         tempCurrentSpjDetails = Array(12).fill(0).map(() => Array(10).fill(0));
         for (let i = 0; i < 12; i++) {
             document.getElementById(`rak_${i}`).value = '';
@@ -1367,7 +1446,7 @@ function deleteData(progId, rekId) {
         if (prog) {
             prog.rekeningList = prog.rekeningList.filter(r => r.id !== rekId);
             if (prog.rekeningList.length === 0) appData = appData.filter(p => p.id !== progId);
-            saveToCloud(); renderData(); showToast("Data Dihapus!");
+            saveToLocal(); renderData(); showToast("Data Dihapus!");
         }
     }
 }
@@ -1384,15 +1463,21 @@ function exportJSON() {
 }
 
 function importJSON(event) {
-    let file = event.target.files[0]; if (!file) return;
+    let file = event.target.files[0]; 
+    if (!file) return;
     let reader = new FileReader();
     reader.onload = async function(e) {
         try {
             let data = JSON.parse(e.target.result);
-            if (Array.isArray(data) && confirm("Pulihkan dan simpan permanen data dari file JSON ini ke Cloud Google Sheets?")) {
-                appData = data; renderData(); await saveToCloud(); showToast("Data Berhasil Dipulihkan & Disimpan ke Cloud!");
+            if (Array.isArray(data) && confirm("Pulihkan dan simpan permanen data dari file JSON ini?")) {
+                appData = data; 
+                renderData(); 
+                saveToLocal(); 
+                showToast("Data Berhasil Dipulihkan!");
             }
-        } catch (err) { alert("Format file JSON tidak valid!"); }
+        } catch (err) { 
+            alert("Format file JSON tidak valid!"); 
+        }
         event.target.value = '';
     };
     reader.readAsText(file);
