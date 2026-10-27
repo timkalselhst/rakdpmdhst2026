@@ -171,7 +171,7 @@
         .cell-rak-clickable { cursor: pointer; transition: all 0.2s ease; }
         .cell-rak-clickable:hover { box-shadow: inset 2px 2px 5px var(--neu-dark), inset -2px -2px 5px var(--neu-light) !important; background-color: #3b82f6 !important; color: #ffffff !important; }
 
-        /* INDIKATOR WARNA SPJ DI TABEL */
+        /* INDIKATOR WARNA PENGELUARAN (SPJ) */
         .spj-hijau { background: #10b981 !important; color: #ffffff !important; font-weight: bold; }
         .spj-kuning { background: #f59e0b !important; color: #ffffff !important; font-weight: bold; }
         .spj-merah { background: #ef4444 !important; color: #ffffff !important; font-weight: bold; }
@@ -201,7 +201,7 @@
         .btn-import-json { background: #F9E610 !important; color: #000000 !important; box-shadow: var(--neu-shadow-flat); }
         .btn-import-json:hover { background: #e5d20b !important; color: #000000 !important; }
 
-        /* TOMBOL REFRESH WARNA BIRU CERAH (BERBEDA DARI EXCEL) */
+        /* TOMBOL REFRESH KHUSUS (BIRU CERAH) */
         .btn-refresh-custom { background: #0ea5e9 !important; color: #ffffff !important; box-shadow: var(--neu-shadow-flat); }
         .btn-refresh-custom:hover { background: #0284c7 !important; color: #ffffff !important; }
 
@@ -217,12 +217,15 @@
         .modal-content { background: var(--neu-bg) !important; border-radius: 24px; border: none !important; box-shadow: 20px 20px 60px var(--neu-dark), -20px -20px 60px var(--neu-light); color: var(--text-main); }
         .modal-header { border-bottom: 1px solid var(--neu-dark) !important; }
 
-        /* TOAST WARNA BERJENJANG */
+        /* TOAST NOTIFIKASI DINAMIS & ANIMASI PUTAR */
+        @keyframes fa-spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        .spinner-rotate { display: inline-block; animation: fa-spin 1s linear infinite; }
+
         .custom-toast { position: fixed; top: 20px; right: 20px; z-index: 999999; background: #10b981; color: #ffffff; padding: 12px 20px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); font-weight: 700; display: flex; align-items: center; gap: 10px; transform: translateX(120%); transition: transform 0.3s ease-in-out; }
         .custom-toast.show { transform: translateX(0); }
-        .custom-toast.toast-success { background: #10b981 !important; color: #ffffff !important; }
-        .custom-toast.toast-warning { background: #f59e0b !important; color: #ffffff !important; }
-        .custom-toast.toast-danger { background: #ef4444 !important; color: #ffffff !important; }
+        .custom-toast.toast-red { background: #ef4444 !important; color: #ffffff !important; }
+        .custom-toast.toast-yellow { background: #f59e0b !important; color: #ffffff !important; }
+        .custom-toast.toast-green { background: #10b981 !important; color: #ffffff !important; }
 
         .real-ant { position: fixed; width: 14px !important; height: 8px !important; pointer-events: none; z-index: 99999; transform-origin: center center; filter: drop-shadow(1px 1px 1px rgba(0,0,0,0.3)); }
         .ant-svg { width: 100%; height: 100%; overflow: visible; }
@@ -632,18 +635,25 @@ let currentFilterBidang = 'SEMUA';
 let tempCurrentSpjDetails = Array(12).fill(0).map(() => Array(10).fill(0));
 let dpmdDonutChart = null;
 
-// FUNGSI TOAST BERJENJANG
-function showToast(msg, type = 'success') {
+// FUNGSI TOAST 3 TAHAP BERJENJANG (MERAH -> KUNING -> HIJAU)
+function showToastCustom(msg, type = 'green', iconClass = 'bi-check-circle-fill', showDuration = 3000) {
     const toast = document.getElementById('saveToast');
-    document.getElementById('toastMessage').innerText = msg;
+    const toastMsg = document.getElementById('toastMessage');
+    const iconEl = toast.querySelector('i');
     
+    toastMsg.innerText = msg;
     toast.className = 'custom-toast';
-    if (type === 'success') toast.classList.add('toast-success');
-    else if (type === 'warning') toast.classList.add('toast-warning');
-    else if (type === 'danger') toast.classList.add('toast-danger');
+    
+    if (type === 'red') toast.classList.add('toast-red');
+    else if (type === 'yellow') toast.classList.add('toast-yellow');
+    else toast.classList.add('toast-green');
 
+    iconEl.className = `bi ${iconClass} fs-5`;
     toast.classList.add('show');
-    setTimeout(() => { toast.classList.remove('show'); }, 3000);
+    
+    if (showDuration > 0) {
+        setTimeout(() => { toast.classList.remove('show'); }, showDuration);
+    }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
@@ -678,26 +688,34 @@ async function loadDataSmart() {
     } catch (err) {}
 }
 
+// 3 TAHAP REFRESH: Merah -> Kuning (Loading) -> Hijau (Alhamdulillah)
 async function forceRefreshFromCloud() {
     try {
-        showToast("Menarik data terbaru dari Google Sheet...", "warning");
+        showToastCustom("Menarik data...", "red", "bi-arrow-clockwise", 0);
+        await new Promise(r => setTimeout(r, 500));
+
+        showToastCustom("Mohon tunggu...", "yellow", "bi-arrow-repeat spinner-rotate", 0);
+
         let response = await fetch(WEB_APP_URL + "?t=" + new Date().getTime(), {
             method: "GET",
             cache: "no-store"
         });
+
         if (response.ok) {
             let result = await response.json();
             if (Array.isArray(result)) {
                 appData = result;
                 localStorage.setItem('sipd_rak_local_data', JSON.stringify(appData));
                 renderData();
-                showToast("SUKSES: Data Berhasil Diperbarui dari Cloud!", "success");
+                await new Promise(r => setTimeout(r, 600));
+                
+                showToastCustom("Alhamdulillah... Data Berhasil Diperbarui...", "green", "bi-check-circle-fill", 3000);
             }
         } else {
-            showToast("Gagal menarik data dari Cloud!", "danger");
+            showToastCustom("Gagal menarik data dari Cloud!", "red", "bi-exclamation-triangle-fill", 3000);
         }
     } catch (err) {
-        showToast("Koneksi Internet Gagal!", "danger");
+        showToastCustom("Koneksi Internet Gagal!", "red", "bi-exclamation-triangle-fill", 3000);
     }
 }
 
@@ -705,10 +723,14 @@ function saveToLocal() {
     localStorage.setItem('sipd_rak_local_data', JSON.stringify(appData));
 }
 
+// 3 TAHAP SIMPAN: Merah -> Kuning (Loading) -> Hijau (Alhamdulillah)
 async function saveToCloudManual() {
     try {
-        showToast("Menyimpan data ke Cloud Google Sheet...", "warning");
+        showToastCustom("Menyimpan data...", "red", "bi-cloud-arrow-up-fill", 0);
         saveToLocal();
+        await new Promise(r => setTimeout(r, 600));
+
+        showToastCustom("Mohon tunggu...", "yellow", "bi-arrow-repeat spinner-rotate", 0);
 
         await fetch(WEB_APP_URL, {
             method: "POST",
@@ -717,9 +739,11 @@ async function saveToCloudManual() {
             body: JSON.stringify(appData)
         });
         
-        showToast("SUKSES: Data Berhasil Tersimpan di Google Sheet!", "success");
+        await new Promise(r => setTimeout(r, 800));
+
+        showToastCustom("Alhamdulillah... Berhasil Disimpan...", "green", "bi-check-circle-fill", 3000);
     } catch (error) {
-        showToast("GAGAL: Periksa koneksi internet Anda!", "danger");
+        showToastCustom("GAGAL: Periksa koneksi internet Anda!", "red", "bi-exclamation-triangle-fill", 3000);
     }
 }
 
@@ -977,7 +1001,6 @@ function updateSingleRowUI(progId, rekId) {
             let spjCell = cells[cellIdx];
             spjCell.innerText = formatAngkaTabel(sVal);
             
-            // INDIKATOR WARNA SPJ BERJENJANG (HIJAU, KUNING, MERAH)
             let spjCls = '';
             if (sVal > 0) {
                 cumSpj += sVal;
@@ -1141,7 +1164,6 @@ function renderData() {
                     sumRakM[i] += rVal; 
                     sumSpjM[i] += sVal;
                     
-                    // INDIKATOR WARNA SPJ BERJENJANG PADA RENDER UTAMA
                     let spjCls = '';
                     if (sVal > 0) {
                         cumSpj += sVal;
@@ -1195,7 +1217,7 @@ function openDirectRakModal(progId, rekId, mIdx) {
         rek.rak[mIdx] = parseCurrencyNumber(val); 
         updateSingleRowUI(progId, rekId);
         saveToLocal(); 
-        showToast("RAK Diperbarui (Lokal)!", "success"); 
+        showToastCustom("RAK Diperbarui (Lokal)!", "green", "bi-check-circle-fill", 3000); 
     }
 }
 
@@ -1250,9 +1272,9 @@ function saveDetailSpj() {
             let totalSpj = rek.spj.reduce((a, b) => a + b, 0);
             if (totalSpj > rek.pagu) {
                 playDangerSound();
-                showToast("PERINGATAN: Realisasi melebihi total pagu!", "danger");
+                showToastCustom("PERINGATAN: Realisasi melebihi total pagu!", "red", "bi-exclamation-triangle-fill", 3000);
             } else {
-                showToast("Pengeluaran Disimpan (Lokal)!", "success");
+                showToastCustom("Pengeluaran Disimpan (Lokal)!", "green", "bi-check-circle-fill", 3000);
             }
 
             updateSingleRowUI(progId, rekId);
@@ -1296,7 +1318,7 @@ async function handleAuthAction() {
         sessionStorage.removeItem('sipd_user');
         updateUserInterface(); 
         renderData();
-        showToast("Sesi Berakhir. Data Aman di Lokal!", "warning");
+        showToastCustom("Sesi Berakhir. Data Aman di Lokal!", "yellow", "bi-exclamation-circle-fill", 3000);
     }
 }
 
@@ -1307,7 +1329,7 @@ function submitLogin(e) {
     let pInp = document.getElementById('loginPass').value.trim();
     if (USERS[uInp] && USERS[uInp].pass === pInp) {
         currentUser = USERS[uInp]; sessionStorage.setItem('sipd_user', JSON.stringify(currentUser));
-        updateUserInterface(); renderData(); showToast(`Selamat datang, ${currentUser.name}!`, "success");
+        updateUserInterface(); renderData(); showToastCustom(`Selamat datang, ${currentUser.name}!`, "green", "bi-check-circle-fill", 3000);
     } else { alert('Username / Password salah!'); }
 }
 
@@ -1423,7 +1445,7 @@ function saveData(e) {
         let modalInst = bootstrap.Modal.getInstance(modalEl);
         if (modalInst) modalInst.hide();
 
-        showToast("Data Rekening Berhasil Diperbarui!", "success");
+        showToastCustom("Data Rekening Berhasil Diperbarui!", "green", "bi-check-circle-fill", 3000);
     } else {
         let existingProg = appData.find(p => p.kodeSubKegiatan === kodeSubVal && p.bidang === bidangVal);
         if (existingProg) {
@@ -1444,7 +1466,7 @@ function saveData(e) {
         saveToLocal();
         renderData();
 
-        showToast("Rekening Berhasil Ditambahkan!", "success");
+        showToastCustom("Rekening Berhasil Ditambahkan!", "green", "bi-check-circle-fill", 3000);
 
         document.getElementById('editRekeningId').value = '';
         document.getElementById('formKodeRekening').value = '';
@@ -1467,7 +1489,7 @@ function deleteData(progId, rekId) {
         if (prog) {
             prog.rekeningList = prog.rekeningList.filter(r => r.id !== rekId);
             if (prog.rekeningList.length === 0) appData = appData.filter(p => p.id !== progId);
-            saveToLocal(); renderData(); showToast("Data Dihapus!", "warning");
+            saveToLocal(); renderData(); showToastCustom("Data Dihapus!", "yellow", "bi-trash-fill", 3000);
         }
     }
 }
@@ -1494,7 +1516,7 @@ function importJSON(event) {
                 appData = data; 
                 renderData(); 
                 saveToLocal(); 
-                showToast("Data Berhasil Dipulihkan!", "success");
+                showToastCustom("Data Berhasil Dipulihkan!", "green", "bi-check-circle-fill", 3000);
             }
         } catch (err) { 
             alert("Format file JSON tidak valid!"); 
